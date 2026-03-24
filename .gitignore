@@ -1,0 +1,29 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.pytest_cache/
+
+# Virtual environments
+.venv
+
+# Local environment files
+.env
+
+# Local infrastructure data
+volumes/
+data/
+
+# Frontend artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.quasar/
+
+# Tooling caches
+.tools/
+
+# Notebook artifacts
+.ipynb_checkpoints/
