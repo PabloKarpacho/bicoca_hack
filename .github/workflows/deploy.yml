@@ -2,7 +2,7 @@ name: Deploy noti_bot
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
 
 concurrency:
   group: deploy-main
