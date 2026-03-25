@@ -225,3 +225,26 @@ class S3:
                 Params={"Bucket": bucket_name, "Key": key},
                 ExpiresIn=url_expiry,
             )
+
+    async def download_bytes(
+        self,
+        *,
+        key: str,
+        bucket_name: str,
+    ) -> tuple[bytes, str | None]:
+        """Download an object from S3-compatible storage into memory."""
+        async with self._session.client(
+            "s3",
+            endpoint_url=self.endpoint_url,
+        ) as s3:
+            logger.info(
+                "Downloading file from S3: bucket={bucket_name}, key={key}".format(
+                    bucket_name=bucket_name, key=key
+                )
+            )
+            response = await s3.get_object(
+                Bucket=bucket_name,
+                Key=key,
+            )
+            body = await response["Body"].read()
+            return body, response.get("ContentType")

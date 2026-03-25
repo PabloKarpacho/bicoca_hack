@@ -1,6 +1,8 @@
 import hashlib
 from pathlib import Path
+from urllib.parse import quote
 
+from botocore.exceptions import ClientError
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -13,6 +15,7 @@ from fastapi import (
     UploadFile,
     status,
 )
+from fastapi.responses import Response
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -71,6 +74,11 @@ from database.postgres.db import get_db_session
 router = APIRouter(prefix="/rag")
 
 SUPPORTED_FILE_TYPES = {".pdf", ".docx"}
+
+
+def build_document_download_path(document_id: str) -> str:
+    """Return the public backend path used to download a stored resume."""
+    return f"/rag/file/{document_id}/download"
 
 
 def build_status_response(document) -> DocumentStatusResponse:
@@ -187,16 +195,11 @@ def merge_hybrid_results(
 
 async def enrich_search_results_with_resume_links(
     *,
-    request: Request,
     session: AsyncSession,
     result: CandidateSearchResult,
 ) -> CandidateSearchResult:
-    """Attach presigned resume download URLs to search results when available."""
+    """Attach backend download URLs to search results when a stored file exists."""
     if not result.items:
-        return result
-
-    cv_storage = getattr(request.app.state, "cv_storage", None)
-    if cv_storage is None:
         return result
 
     document_ids = list(dict.fromkeys(item.document_id for item in result.items))
@@ -211,16 +214,7 @@ async def enrich_search_results_with_resume_links(
             or not document.storage_key
         ):
             continue
-        try:
-            item.resume_download_url = await cv_storage.get_download_url(
-                bucket_name=document.storage_bucket,
-                key=document.storage_key,
-            )
-        except Exception:
-            logger.exception(
-                "Failed to generate resume download URL for document_id={document_id}",
-                document_id=item.document_id,
-            )
+        item.resume_download_url = build_document_download_path(item.document_id)
     return result
 
 
@@ -478,6 +472,77 @@ async def list_files(
 
 
 @router.get(
+    "/file/{file_id}/download",
+    responses={404: {"model": ErrorResponse}},
+)
+async def download_file(
+    request: Request,
+    file_id: str,
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    """Download a stored resume through the backend without exposing MinIO publicly."""
+    documents = CandidateDocumentRepository(session)
+    document = await documents.get_plain_by_id(file_id)
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+    if not document.storage_key:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Stored resume file is not available",
+        )
+
+    bucket_name = (
+        document.storage_bucket or request.app.state.cv_storage.bucket_name
+    )
+    try:
+        file_bytes, content_type = await request.app.state.s3.download_bytes(
+            key=document.storage_key,
+            bucket_name=bucket_name,
+        )
+    except ClientError as exc:
+        error_code = exc.response.get("Error", {}).get("Code")
+        if error_code in {"NoSuchKey", "NoSuchBucket", "404"}:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Stored resume file is not available",
+            ) from exc
+        logger.exception(
+            "Failed to download resume from storage for document_id={document_id}",
+            document_id=file_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Resume storage is temporarily unavailable",
+        ) from exc
+    except Exception as exc:
+        logger.exception(
+            "Unexpected storage error while downloading resume for document_id={document_id}",
+            document_id=file_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Resume storage is temporarily unavailable",
+        ) from exc
+
+    safe_filename = document.original_filename.replace('"', "")
+    encoded_filename = quote(document.original_filename)
+    headers = {
+        "Content-Disposition": (
+            f"inline; filename=\"{safe_filename}\"; "
+            f"filename*=UTF-8''{encoded_filename}"
+        )
+    }
+    return Response(
+        content=file_bytes,
+        media_type=content_type or document.content_type or "application/octet-stream",
+        headers=headers,
+    )
+
+
+@router.get(
     "/file/{file_id}",
     response_model=DocumentStatusResponse,
     responses={404: {"model": ErrorResponse}},
@@ -666,7 +731,6 @@ async def search_candidates(
         service = CandidateRuleSearchService(session)
         result = await service.search(filters)
         return await enrich_search_results_with_resume_links(
-            request=request,
             session=session,
             result=result,
         )
@@ -685,7 +749,6 @@ async def search_candidates(
             )
             raise HTTPException(status_code=status_code, detail=str(exc)) from exc
         return await enrich_search_results_with_resume_links(
-            request=request,
             session=session,
             result=result,
         )
@@ -694,7 +757,6 @@ async def search_candidates(
         rule_result = await rule_service.search(filters)
         if rule_result.total == 0:
             return await enrich_search_results_with_resume_links(
-                request=request,
                 session=session,
                 result=rule_result,
             )
@@ -723,7 +785,6 @@ async def search_candidates(
                     "Hybrid search fallback to rule-based result because no vector query could be built"
                 )
                 return await enrich_search_results_with_resume_links(
-                    request=request,
                     session=session,
                     result=rule_result,
                 )
@@ -735,7 +796,6 @@ async def search_candidates(
             raise HTTPException(status_code=status_code, detail=str(exc)) from exc
         if vector_result.total == 0:
             return await enrich_search_results_with_resume_links(
-                request=request,
                 session=session,
                 result=rule_result,
             )
@@ -745,7 +805,6 @@ async def search_candidates(
             vector_result=vector_result,
         )
         return await enrich_search_results_with_resume_links(
-            request=request,
             session=session,
             result=merged_result,
         )

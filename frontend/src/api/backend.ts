@@ -220,13 +220,17 @@ function mapDocumentStatusSummary(response: BackendDocumentStatusResponse): Docu
   };
 }
 
+function buildDocumentDownloadUrl(documentId: string): string {
+  return `/rag/file/${documentId}/download`;
+}
+
 function mapDocumentListItem(response: BackendDocumentStatusResponse): DocumentListItem {
   return {
     documentId: response.document_id,
     fileName: response.original_filename,
     uploadedAt: response.created_at,
     candidateId: response.candidate_id,
-    resumeUrl: null,
+    resumeUrl: buildDocumentDownloadUrl(response.document_id),
     status: mapDocumentStatusSummary(response),
   };
 }
@@ -337,7 +341,7 @@ function mapSearchResultItem(item: BackendCandidateSearchResultItem): CandidateS
     totalExperienceMonths: item.total_experience_months ?? null,
     location: item.location_normalized ?? null,
     summary: item.matched_chunk_text_preview ?? null,
-    resumeUrl: item.resume_download_url ?? null,
+    resumeUrl: item.resume_download_url ?? buildDocumentDownloadUrl(item.document_id),
     score: item.score ?? null,
     matchScorePercent: item.match_score_percent ?? null,
     matchScoreBreakdown: item.match_score_breakdown
@@ -384,7 +388,7 @@ export function createBackendApiClients(): ApiClients {
             fileName: file.name,
             uploadedAt: new Date().toISOString(),
             candidateId: response.candidate_id,
-            resumeUrl: null,
+            resumeUrl: buildDocumentDownloadUrl(response.document_id),
           },
           trackingTarget: {
             kind: 'document',
