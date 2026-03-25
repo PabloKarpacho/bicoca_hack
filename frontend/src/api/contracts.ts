@@ -1,4 +1,5 @@
 import type {
+  DocumentListItem,
   DocumentProcessingStatus,
   DocumentSubmissionReceipt,
 } from '../types/documents';
@@ -13,6 +14,8 @@ import type {
 export interface DocumentsApi {
   uploadResume(file: File): Promise<DocumentSubmissionReceipt>;
   getDocumentStatus(documentId: string): Promise<DocumentProcessingStatus>;
+  listDocuments(): Promise<DocumentListItem[]>;
+  deleteDocument(documentId: string): Promise<void>;
 }
 
 export interface SearchApi {

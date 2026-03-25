@@ -27,6 +27,7 @@ from app.models.candidate_vector import (
 )
 from app.models.cv import (
     CandidateUpsertPayload,
+    DocumentListResponse,
     DocumentPipelineStatusResponse,
     DocumentStatusResponse,
     ErrorResponse,
@@ -458,6 +459,21 @@ async def ingest_file(
         status=document.processing_status,
         checksum_sha256=document.checksum_sha256,
         pipeline_status_url=f"/rag/file/{document.document_id}/pipeline-status",
+    )
+
+
+@router.get(
+    "/files",
+    response_model=DocumentListResponse,
+)
+async def list_files(
+    session: AsyncSession = Depends(get_db_session),
+) -> DocumentListResponse:
+    """Return all uploaded documents ordered from newest to oldest."""
+    documents = await CandidateDocumentRepository(session).list_all()
+    return DocumentListResponse(
+        total=len(documents),
+        items=[build_status_response(document) for document in documents],
     )
 
 

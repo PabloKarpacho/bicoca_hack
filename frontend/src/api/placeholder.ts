@@ -6,6 +6,8 @@ export function createPlaceholderApiClients(): ApiClients {
     documents: {
       uploadResume: () => Promise.reject(new ApiIntegrationNotConfiguredError()),
       getDocumentStatus: () => Promise.reject(new ApiIntegrationNotConfiguredError()),
+      listDocuments: () => Promise.reject(new ApiIntegrationNotConfiguredError()),
+      deleteDocument: () => Promise.reject(new ApiIntegrationNotConfiguredError()),
     },
     search: {
       prepareJobSearch: () => Promise.reject(new ApiIntegrationNotConfiguredError()),

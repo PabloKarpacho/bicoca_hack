@@ -27,18 +27,69 @@ function mapJobStateToDocumentState(state: AsyncJobSnapshot['state']): DocumentP
 export const useDocumentsStore = defineStore('documents', () => {
   const items = ref<DocumentListItem[]>([]);
   const isSubmitting = ref(false);
+  const isLoading = ref(false);
   const submitError = ref<string | null>(null);
+  const loadError = ref<string | null>(null);
   const activeDocumentId = ref<string | null>(null);
+  const deletingDocumentIds = ref<string[]>([]);
 
   const asyncJobsStore = useAsyncJobsStore();
 
-  const recentDocuments = computed(() =>
+  const allDocuments = computed(() =>
     [...items.value].sort((left, right) => right.uploadedAt.localeCompare(left.uploadedAt)),
   );
 
-  const activeDocument = computed(() =>
-    items.value.find((item) => item.documentId === activeDocumentId.value) ?? null,
-  );
+  const activeDocument = computed(() => {
+    const explicitActive =
+      items.value.find((item) => item.documentId === activeDocumentId.value) ?? null;
+    if (explicitActive) {
+      return explicitActive;
+    }
+
+    return (
+      allDocuments.value.find((item) => !item.status.isTerminal) ??
+      allDocuments.value[0] ??
+      null
+    );
+  });
+
+  function isDeletingDocument(documentId: string): boolean {
+    return deletingDocumentIds.value.includes(documentId);
+  }
+
+  function trackPendingDocuments(nextItems: DocumentListItem[]): void {
+    for (const item of nextItems) {
+      if (!item.status.isTerminal) {
+        startTracking(item.documentId, {
+          kind: 'document',
+          id: item.documentId,
+        });
+      }
+    }
+  }
+
+  async function loadDocuments(): Promise<void> {
+    isLoading.value = true;
+    loadError.value = null;
+
+    try {
+      const loadedItems = await getApiClients().documents.listDocuments();
+      items.value = loadedItems;
+      trackPendingDocuments(loadedItems);
+
+      if (!activeDocumentId.value || !loadedItems.some((item) => item.documentId === activeDocumentId.value)) {
+        activeDocumentId.value =
+          loadedItems.find((item) => !item.status.isTerminal)?.documentId ??
+          loadedItems[0]?.documentId ??
+          null;
+      }
+    } catch (error) {
+      loadError.value = error instanceof Error ? error.message : 'Could not load uploaded resumes';
+      throw error;
+    } finally {
+      isLoading.value = false;
+    }
+  }
 
   function upsertDocument(nextItem: DocumentListItem): void {
     const index = items.value.findIndex((item) => item.documentId === nextItem.documentId);
@@ -115,14 +166,42 @@ export const useDocumentsStore = defineStore('documents', () => {
     return status;
   }
 
+  async function deleteDocument(documentId: string): Promise<void> {
+    deletingDocumentIds.value = [...deletingDocumentIds.value, documentId];
+
+    try {
+      await getApiClients().documents.deleteDocument(documentId);
+      asyncJobsStore.stopTracking({
+        kind: 'document',
+        id: documentId,
+      });
+      items.value = items.value.filter((item) => item.documentId !== documentId);
+
+      if (activeDocumentId.value === documentId) {
+        activeDocumentId.value =
+          allDocuments.value.find((item) => !item.status.isTerminal)?.documentId ??
+          allDocuments.value[0]?.documentId ??
+          null;
+      }
+    } finally {
+      deletingDocumentIds.value = deletingDocumentIds.value.filter((id) => id !== documentId);
+    }
+  }
+
   return {
     items,
-    recentDocuments,
+    allDocuments,
     activeDocumentId,
     activeDocument,
+    isLoading,
     isSubmitting,
     submitError,
+    loadError,
+    deletingDocumentIds,
+    isDeletingDocument,
+    loadDocuments,
     uploadResume,
     refreshDocumentStatus,
+    deleteDocument,
   };
 });

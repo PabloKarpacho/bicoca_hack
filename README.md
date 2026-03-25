@@ -568,3 +568,4 @@ Full stack in Docker:
 ```bash
 docker compose up --build
 ```
+

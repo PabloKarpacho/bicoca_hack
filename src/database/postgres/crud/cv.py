@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -119,6 +119,17 @@ class CandidateDocumentRepository:
             select(CandidateDocument).where(
                 CandidateDocument.document_id.in_(document_ids)
             )
+        )
+        return list(result.scalars().all())
+
+    async def list_all(self) -> list[CandidateDocument]:
+        result = await self.session.execute(
+            select(CandidateDocument)
+            .options(
+                selectinload(CandidateDocument.candidate),
+                selectinload(CandidateDocument.text),
+            )
+            .order_by(desc(CandidateDocument.created_at))
         )
         return list(result.scalars().all())
 

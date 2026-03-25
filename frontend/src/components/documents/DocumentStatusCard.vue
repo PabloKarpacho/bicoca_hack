@@ -29,7 +29,18 @@
     </q-card-section>
 
     <q-card-actions align="between">
-      <q-btn flat icon="refresh" label="Refresh status" @click="$emit('refresh', item.documentId)" />
+      <div class="row q-gutter-sm">
+        <q-btn flat icon="refresh" label="Refresh status" @click="$emit('refresh', item.documentId)" />
+        <q-btn
+          color="negative"
+          flat
+          icon="delete"
+          label="Delete"
+          :loading="deleting"
+          @click="$emit('delete', item.documentId)"
+        />
+      </div>
+
       <q-btn
         color="primary"
         outline
@@ -51,9 +62,11 @@ import StatusChip from '../shared/StatusChip.vue';
 
 defineProps<{
   item: DocumentListItem;
+  deleting?: boolean;
 }>();
 
 defineEmits<{
   refresh: [documentId: string];
+  delete: [documentId: string];
 }>();
 </script>

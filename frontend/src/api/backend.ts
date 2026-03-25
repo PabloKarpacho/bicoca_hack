@@ -1,5 +1,6 @@
 import type { ApiClients } from './contracts';
 import type {
+  DocumentListItem,
   DocumentProcessingState,
   DocumentProcessingStatus,
   DocumentSubmissionReceipt,
@@ -48,6 +49,27 @@ interface BackendPipelineStatusResponse {
   entity_extraction?: BackendPipelineStage | null;
   vector_indexing?: BackendPipelineStage | null;
   updated_at: string;
+}
+
+interface BackendCandidateInfo {
+  candidate_id: string;
+  full_name?: string | null;
+}
+
+interface BackendDocumentStatusResponse {
+  document_id: string;
+  candidate_id: string;
+  original_filename: string;
+  processing_status: string;
+  error_message?: string | null;
+  created_at: string;
+  updated_at: string;
+  candidate?: BackendCandidateInfo | null;
+}
+
+interface BackendDocumentListResponse {
+  total: number;
+  items: BackendDocumentStatusResponse[];
 }
 
 interface BackendCandidateSearchLanguageFilter {
@@ -170,6 +192,42 @@ function mapPipelineStatus(response: BackendPipelineStatusResponse): DocumentPro
     errorMessage: response.error_message ?? null,
     isTerminal: response.is_terminal,
     updatedAt: response.updated_at,
+  };
+}
+
+function mapDocumentStatusSummary(response: BackendDocumentStatusResponse): DocumentProcessingStatus {
+  const state = mapBackendDocumentState(response.processing_status);
+  const stageLabel =
+    state === 'completed'
+      ? 'Ready'
+      : state === 'failed'
+        ? 'Failed'
+        : humanizeStageLabel(response.processing_status);
+
+  return {
+    documentId: response.document_id,
+    state,
+    stageLabel,
+    message:
+      state === 'failed'
+        ? 'Document processing failed'
+        : state === 'completed'
+          ? 'Document is ready for further use'
+          : 'Document is being processed by the backend pipeline',
+    errorMessage: response.error_message ?? null,
+    isTerminal: state === 'completed' || state === 'failed',
+    updatedAt: response.updated_at,
+  };
+}
+
+function mapDocumentListItem(response: BackendDocumentStatusResponse): DocumentListItem {
+  return {
+    documentId: response.document_id,
+    fileName: response.original_filename,
+    uploadedAt: response.created_at,
+    candidateId: response.candidate_id,
+    resumeUrl: null,
+    status: mapDocumentStatusSummary(response),
   };
 }
 
@@ -349,6 +407,17 @@ export function createBackendApiClients(): ApiClients {
           `/rag/file/${documentId}/pipeline-status`,
         );
         return mapPipelineStatus(response);
+      },
+
+      async listDocuments(): Promise<DocumentListItem[]> {
+        const response = await apiRequest<BackendDocumentListResponse>('/rag/files');
+        return response.items.map(mapDocumentListItem);
+      },
+
+      async deleteDocument(documentId: string): Promise<void> {
+        await apiRequest(`/rag/file/${documentId}`, {
+          method: 'DELETE',
+        });
       },
     },
 

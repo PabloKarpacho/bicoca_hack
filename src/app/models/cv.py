@@ -53,6 +53,11 @@ class DocumentStatusResponse(BaseModel):
     candidate: CandidateInfoResponse
 
 
+class DocumentListResponse(BaseModel):
+    total: int
+    items: list[DocumentStatusResponse]
+
+
 class ErrorResponse(BaseModel):
     detail: str = Field(..., examples=["Unsupported file type: txt"])
 
