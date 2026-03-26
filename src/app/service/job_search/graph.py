@@ -187,6 +187,11 @@ class JobSearchPreparationGraph:
                 if normalized.rule_filters.remote_policies is not None
                 else None
             ),
+            employment_types_json=(
+                json.dumps(normalized.rule_filters.employment_types, ensure_ascii=False)
+                if normalized.rule_filters.employment_types is not None
+                else None
+            ),
             employment_type=(
                 normalized.rule_filters.employment_types[0]
                 if normalized.rule_filters.employment_types

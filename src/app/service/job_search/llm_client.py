@@ -46,11 +46,13 @@ Rules:
   - seniority_normalized
   - location_raw
   - remote_policies
-  - employment_type
+  - employment_types
   - min_years_experience
   - min_experience_months
 - profile.remote_policies must contain only values from: remote, hybrid, onsite.
 - profile.remote_policies may contain multiple values when the job description clearly allows more than one work mode.
+- profile.employment_types must contain only values from: full_time, part_time, contract, internship.
+- profile.employment_types may contain multiple values when the job description clearly allows more than one employment arrangement.
 - Do not invent requirements that are not supported by the text.
 - languages entries must include:
   - language_raw or language_normalized

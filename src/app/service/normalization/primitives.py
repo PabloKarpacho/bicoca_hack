@@ -62,6 +62,14 @@ LANGUAGE_LEVELS = {
     "a2": "basic",
 }
 
+PROFICIENCY_CANONICAL = (
+    "native",
+    "fluent",
+    "professional",
+    "intermediate",
+    "basic",
+)
+
 LANGUAGE_NAME_SYNONYMS = {
     "english": "English",
     "italian": "Italian",
@@ -89,6 +97,18 @@ JOB_TITLE_CLUSTERS = {
     "product manager": "product_manager",
     "project manager": "project_manager",
 }
+
+REMOTE_POLICY_CANONICAL = ("remote", "hybrid", "onsite")
+EMPLOYMENT_TYPE_CANONICAL = ("full_time", "part_time", "contract", "internship")
+SENIORITY_CANONICAL = (
+    "intern",
+    "junior",
+    "middle",
+    "senior",
+    "lead",
+    "manager",
+)
+EDUCATION_CANONICAL = ("secondary", "associate", "bachelor", "master", "phd")
 
 REMOTE_POLICY_MAP = {
     "remote": "remote",
@@ -250,7 +270,7 @@ def extract_remote_policies(value: str | list[str] | None) -> list[str] | None:
             matches.append("onsite")
 
         normalized_direct = normalize_remote_policy(lowered)
-        if normalized_direct in {"remote", "hybrid", "onsite"}:
+        if normalized_direct in REMOTE_POLICY_CANONICAL:
             matches.append(normalized_direct)
 
         for match in matches:
@@ -294,7 +314,7 @@ def extract_employment_types(value: str | list[str] | None) -> list[str] | None:
             matches.append("internship")
 
         normalized_direct = normalize_employment_type(lowered)
-        if normalized_direct in {"full_time", "part_time", "contract", "internship"}:
+        if normalized_direct in EMPLOYMENT_TYPE_CANONICAL:
             matches.append(normalized_direct)
 
         for match in matches:

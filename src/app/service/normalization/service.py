@@ -12,11 +12,16 @@ from app.config.enums.normalization_status import NormalizationStatus
 from app.models.normalization import EntityNormalizationResult
 from app.service.normalization.primitives import (
     DEGREE_SYNONYMS,
+    EDUCATION_CANONICAL,
+    EMPLOYMENT_TYPE_CANONICAL,
     EMPLOYMENT_TYPE_MAP,
     JOB_TITLE_CLUSTERS,
     LANGUAGE_LEVELS,
     LANGUAGE_NAME_SYNONYMS,
+    PROFICIENCY_CANONICAL,
+    REMOTE_POLICY_CANONICAL,
     REMOTE_POLICY_MAP,
+    SENIORITY_CANONICAL,
     SKILL_CATEGORIES,
     infer_seniority,
     normalize_degree,
@@ -34,15 +39,8 @@ from database.postgres.crud.cv import EntityNormalizationRepository
 
 PIPELINE_VERSION = "entity_normalization_mvp_v1"
 
-PROFICIENCY_CANONICAL = [
-    "native",
-    "fluent",
-    "professional",
-    "intermediate",
-    "basic",
-    "unknown",
-]
-SENIORITY_CANONICAL = ["junior", "middle", "senior", "lead", "manager", "unknown"]
+PROFICIENCY_CANONICAL_WITH_UNKNOWN = [*PROFICIENCY_CANONICAL, "unknown"]
+SENIORITY_CANONICAL_WITH_UNKNOWN = [*SENIORITY_CANONICAL, "unknown"]
 LANGUAGE_CANONICAL = [
     "English",
     "Italian",
@@ -56,9 +54,9 @@ LANGUAGE_CANONICAL = [
 ]
 SKILL_CANONICAL = sorted(SKILL_CATEGORIES.keys())
 PROFESSION_CANONICAL = sorted(set(JOB_TITLE_CLUSTERS.values()))
-REMOTE_POLICY_CANONICAL = sorted(set(REMOTE_POLICY_MAP.values()))
-EMPLOYMENT_TYPE_CANONICAL = sorted(set(EMPLOYMENT_TYPE_MAP.values()))
-EDUCATION_CANONICAL = ["secondary", "associate", "bachelor", "master", "phd"]
+REMOTE_POLICY_CANONICAL_LIST = list(REMOTE_POLICY_CANONICAL)
+EMPLOYMENT_TYPE_CANONICAL_LIST = list(EMPLOYMENT_TYPE_CANONICAL)
+EDUCATION_CANONICAL_LIST = list(EDUCATION_CANONICAL)
 CITY_SYNONYMS = {
     "milan": "Milan",
     "milano": "Milan",
@@ -449,19 +447,19 @@ def _seed_canonical_values(normalization_class: NormalizationClass) -> list[str]
     if normalization_class == NormalizationClass.LANGUAGES:
         return LANGUAGE_CANONICAL
     if normalization_class == NormalizationClass.PROFICIENCY_LEVELS:
-        return PROFICIENCY_CANONICAL
+        return PROFICIENCY_CANONICAL_WITH_UNKNOWN
     if normalization_class == NormalizationClass.SENIORITY_LEVELS:
-        return SENIORITY_CANONICAL
+        return SENIORITY_CANONICAL_WITH_UNKNOWN
     if normalization_class == NormalizationClass.SKILLS:
         return SKILL_CANONICAL
     if normalization_class == NormalizationClass.PROFESSIONS:
         return PROFESSION_CANONICAL
     if normalization_class == NormalizationClass.REMOTE_POLICY:
-        return REMOTE_POLICY_CANONICAL
+        return REMOTE_POLICY_CANONICAL_LIST
     if normalization_class == NormalizationClass.EMPLOYMENT_TYPE:
-        return EMPLOYMENT_TYPE_CANONICAL
+        return EMPLOYMENT_TYPE_CANONICAL_LIST
     if normalization_class == NormalizationClass.EDUCATION:
-        return EDUCATION_CANONICAL
+        return EDUCATION_CANONICAL_LIST
     if normalization_class == NormalizationClass.CITIES:
         return list(dict.fromkeys(CITY_SYNONYMS.values()))
     if normalization_class == NormalizationClass.COUNTRIES:

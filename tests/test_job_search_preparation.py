@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from app.config.enums.processing_run_status import ProcessingRunStatus
@@ -47,7 +49,7 @@ def _job_payload() -> dict:
         "seniority_normalized": "senior",
         "location_raw": "Milan, Italy",
         "remote_policies": ["Hybrid", "Remote"],
-        "employment_type": "Full-time",
+        "employment_types": ["Full-time", "Contract"],
         "required_languages": [
             {
                 "language_normalized": "English",
@@ -130,7 +132,7 @@ async def test_job_search_preparation_happy_path_persists_profile(db_sessionmake
         assert result.seniority_normalized == ["senior"]
         assert result.location_normalized == ["milan, italy"]
         assert result.remote_policies == ["hybrid", "remote"]
-        assert result.employment_types == ["full_time"]
+        assert result.employment_types == ["full_time", "contract"]
         assert result.min_total_experience_months == 60
         assert result.include_skills == ["python", "postgresql"]
         assert result.optional_skills == ["fastapi"]
@@ -148,6 +150,8 @@ async def test_job_search_preparation_happy_path_persists_profile(db_sessionmake
         profile = await JobSearchProfileRepository(session).get_by_job_id("job-001")
         assert profile is not None
         assert profile.semantic_query_text_main == result.query_text
+        assert json.loads(profile.employment_types_json) == ["full_time", "contract"]
+        assert profile.employment_type == "full_time"
 
 
 @pytest.mark.asyncio

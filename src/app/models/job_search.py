@@ -2,43 +2,81 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
+from app.models.common_types import (
+    EducationLiteral,
+    ExtractedSkillSourceLiteral,
+    EmploymentTypeLiteral,
+    ProficiencyLiteral,
+    RemotePolicyLiteral,
+    SeniorityLiteral,
+)
 from app.models.entity_extraction import JobSearchExtractionLLMOutput
 
 
 class JobSearchPreparationRequest(BaseModel):
-    job_id: str | None = None
-    source_document_id: str | None = None
-    raw_text: str
+    job_id: str | None = Field(default=None, description="Job identifier when the request is tied to a stored job record.")
+    source_document_id: str | None = Field(
+        default=None,
+        description="Source document identifier that contains the vacancy text, if any.",
+    )
+    raw_text: str = Field(description="Raw vacancy text that should be parsed into structured job search requirements.")
 
 class PreparedJobLanguageRequirement(BaseModel):
-    language_normalized: str
-    min_proficiency_normalized: str | None = None
-    is_required: bool = True
-
-
-class PreparedJobSkillRequirement(BaseModel):
-    normalized_skill: str
-    is_required: bool
-    source_type: str | None = None
+    language_normalized: str = Field(description="Canonical language name required by the vacancy.")
+    min_proficiency_normalized: ProficiencyLiteral | None = Field(
+        default=None,
+        description="Minimum acceptable proficiency level for the language requirement.",
+    )
+    is_required: bool = Field(
+        default=True,
+        description="Whether this language is mandatory for the role.",
+    )
 
 
 class PreparedJobRuleFilters(BaseModel):
-    title_raw: str | None = None
-    title_normalized: str | None = None
-    seniority_normalized: str | None = None
-    location_raw: str | None = None
-    location_normalized: str | None = None
-    remote_policies: list[str] | None = None
-    employment_types: list[str] | None = None
-    required_languages: list[PreparedJobLanguageRequirement] = Field(default_factory=list)
-    required_skills: list[str] = Field(default_factory=list)
-    optional_skills: list[str] = Field(default_factory=list)
-    domains: list[str] = Field(default_factory=list)
-    min_experience_months: int | None = None
-    education_requirements: list[str] = Field(default_factory=list)
-    certification_requirements: list[str] = Field(default_factory=list)
+    title_raw: str | None = Field(default=None, description="Original vacancy title text.")
+    title_normalized: str | None = Field(default=None, description="Normalized canonical vacancy title.")
+    seniority_normalized: SeniorityLiteral | None = Field(
+        default=None,
+        description="Normalized seniority required by the vacancy.",
+    )
+    location_raw: str | None = Field(default=None, description="Original location text from the vacancy.")
+    location_normalized: str | None = Field(default=None, description="Normalized vacancy location label.")
+    remote_policies: list[RemotePolicyLiteral] | None = Field(
+        default=None,
+        description="Remote or onsite work arrangements extracted from the vacancy.",
+    )
+    employment_types: list[EmploymentTypeLiteral] | None = Field(
+        default=None,
+        description="Employment types extracted from the vacancy.",
+    )
+    required_languages: list[PreparedJobLanguageRequirement] = Field(
+        default_factory=list,
+        description="Structured language requirements for rule-based matching.",
+    )
+    required_skills: list[str] = Field(
+        default_factory=list,
+        description="Required normalized skills for rule-based matching.",
+    )
+    optional_skills: list[str] = Field(
+        default_factory=list,
+        description="Optional normalized skills for supportive matching.",
+    )
+    domains: list[str] = Field(default_factory=list, description="Business or industry domains extracted from the vacancy.")
+    min_experience_months: int | None = Field(
+        default=None,
+        description="Minimum professional experience requirement converted to months.",
+    )
+    education_requirements: list[EducationLiteral] = Field(
+        default_factory=list,
+        description="Normalized education levels requested by the vacancy.",
+    )
+    certification_requirements: list[str] = Field(
+        default_factory=list,
+        description="Certification requirements extracted from the vacancy.",
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -61,65 +99,35 @@ class PreparedJobRuleFilters(BaseModel):
 
 
 class PreparedJobVectorQueries(BaseModel):
-    main_query_text: str
-    responsibilities_query_text: str | None = None
-    skills_query_text: str | None = None
+    main_query_text: str = Field(description="Main semantic query text used for candidate vector search.")
+    responsibilities_query_text: str | None = Field(
+        default=None,
+        description="Optional responsibility-focused semantic query text.",
+    )
+    skills_query_text: str | None = Field(
+        default=None,
+        description="Optional skill-focused semantic query text.",
+    )
 
 
 class PreparedJobSearchData(BaseModel):
-    rule_filters: PreparedJobRuleFilters
-    vector_queries: PreparedJobVectorQueries
-    extraction_confidence: float | None = None
+    rule_filters: PreparedJobRuleFilters = Field(description="Structured rule-based filters derived from the vacancy.")
+    vector_queries: PreparedJobVectorQueries = Field(description="Semantic vector queries derived from the vacancy.")
+    extraction_confidence: float | None = Field(
+        default=None,
+        description="Overall extraction confidence for the prepared vacancy search payload.",
+    )
 
 
 class JobSearchProcessingMetadata(BaseModel):
-    status: str
-    pipeline_version: str
-    model_version: str | None = None
-    extraction_confidence: float | None = None
-    error_message: str | None = None
-    started_at: datetime | None = None
-    finished_at: datetime | None = None
+    status: str = Field(description="Processing status for the job preparation pipeline.")
+    pipeline_version: str = Field(description="Pipeline version used for job preparation.")
+    model_version: str | None = Field(default=None, description="Model version used for preparation, when available.")
+    extraction_confidence: float | None = Field(
+        default=None,
+        description="Overall extraction confidence for the preparation run.",
+    )
+    error_message: str | None = Field(default=None, description="Error message if preparation failed.")
+    started_at: datetime | None = Field(default=None, description="Timestamp when preparation started.")
+    finished_at: datetime | None = Field(default=None, description="Timestamp when preparation finished.")
 
-
-class JobSearchPreparedQuery(BaseModel):
-    job_id: str
-    source_document_id: str | None = None
-    rule_filters: PreparedJobRuleFilters
-    vector_queries: PreparedJobVectorQueries
-    processing_metadata: JobSearchProcessingMetadata | None = None
-
-
-class JobSearchPreparationRunResponse(BaseModel):
-    job_id: str
-    source_document_id: str | None = None
-    status: str
-    pipeline_version: str
-    model_version: str | None = None
-    extraction_confidence: float | None = None
-
-
-class JobSearchProfileResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    job_search_profile_id: str
-    job_id: str
-    source_document_id: str | None = None
-    raw_title: str | None = None
-    normalized_title: str | None = None
-    seniority_normalized: str | None = None
-    location_raw: str | None = None
-    location_normalized: str | None = None
-    remote_policies_json: str | None = None
-    employment_type: str | None = None
-    min_experience_months: int | None = None
-    education_requirements: str | None = None
-    certification_requirements: str | None = None
-    semantic_query_text_main: str
-    semantic_query_text_responsibilities: str | None = None
-    semantic_query_text_skills: str | None = None
-    extraction_confidence: float | None = None
-    pipeline_version: str
-    model_version: str | None = None
-    created_at: datetime
-    updated_at: datetime

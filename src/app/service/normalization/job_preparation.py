@@ -59,7 +59,7 @@ async def normalize_job_search_requirements(
         normalization_service=normalization_service,
     )
     employment_types = await _normalize_employment_types(
-        profile.employment_type,
+        profile.employment_types,
         normalization_service=normalization_service,
     )
     min_experience_months = _normalize_min_experience_months(
@@ -422,23 +422,32 @@ async def _normalize_remote_policies(
 
 
 async def _normalize_employment_types(
-    value: str | None,
+    value: str | list[str] | None,
     *,
     normalization_service: EntityNormalizationService | None,
 ) -> list[str] | None:
-    cleaned = _clean_text(value)
-    if cleaned is None:
-        return None
-    if normalization_service is None:
-        from app.service.normalization.primitives import normalize_employment_type
+    raw_values = value if isinstance(value, list) else [value]
+    normalized_values: list[str] = []
+    seen: set[str] = set()
 
-        normalized = normalize_employment_type(cleaned)
-        return [normalized] if normalized else None
-    result = await normalization_service.normalize(
-        original_value=cleaned,
-        normalization_class=NormalizationClass.EMPLOYMENT_TYPE,
-    )
-    return [result.normalized_value] if result.normalized_value else None
+    for raw_value in raw_values:
+        cleaned = _clean_text(raw_value)
+        if cleaned is None:
+            continue
+        if normalization_service is None:
+            from app.service.normalization.primitives import normalize_employment_type
+
+            normalized = normalize_employment_type(cleaned)
+        else:
+            result = await normalization_service.normalize(
+                original_value=cleaned,
+                normalization_class=NormalizationClass.EMPLOYMENT_TYPE,
+            )
+            normalized = result.normalized_value
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            normalized_values.append(normalized)
+    return normalized_values or None
 
 
 async def _normalize_location(

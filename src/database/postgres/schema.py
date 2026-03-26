@@ -688,6 +688,7 @@ class JobSearchProfile(Base):
     )
     remote_policy: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     remote_policies_json: Mapped[Optional[str]] = mapped_column(Text(), nullable=True)
+    employment_types_json: Mapped[Optional[str]] = mapped_column(Text(), nullable=True)
     employment_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     min_experience_months: Mapped[Optional[int]] = mapped_column(
         Integer(), nullable=True

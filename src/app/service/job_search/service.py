@@ -156,7 +156,10 @@ class JobSearchPreparationService:
                 _parse_json_array(profile.remote_policies_json)
                 or ([profile.remote_policy] if profile.remote_policy else None)
             ),
-            employment_types=[profile.employment_type] if profile.employment_type else None,
+            employment_types=(
+                _parse_json_array(profile.employment_types_json)
+                or ([profile.employment_type] if profile.employment_type else None)
+            ),
             languages=(
                 [
                     CandidateLanguageFilter(
