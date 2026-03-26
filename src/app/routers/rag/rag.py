@@ -74,6 +74,7 @@ from database.postgres.db import get_db_session
 router = APIRouter(prefix="/rag")
 
 SUPPORTED_FILE_TYPES = {".pdf", ".docx"}
+MAX_UPLOAD_FILE_SIZE_BYTES = 10 * 1024 * 1024
 
 
 def build_document_download_path(document_id: str) -> str:
@@ -373,6 +374,12 @@ async def ingest_file(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Uploaded file is empty",
+        )
+    if len(file_bytes) > MAX_UPLOAD_FILE_SIZE_BYTES:
+        max_size_mb = MAX_UPLOAD_FILE_SIZE_BYTES // (1024 * 1024)
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Uploaded file is too large. Maximum allowed size is {max_size_mb} MB.",
         )
 
     try:
