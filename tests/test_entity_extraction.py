@@ -219,6 +219,68 @@ async def test_entity_extraction_happy_path_persists_entities(db_sessionmaker):
 
 
 @pytest.mark.asyncio
+async def test_entity_extraction_preserves_multiple_education_stages_from_same_university(
+    db_sessionmaker,
+):
+    async with db_sessionmaker() as session:
+        _, document_id = await _create_document(
+            session,
+            raw_text=(
+                "Jane Doe\n"
+                "ITMO University\n"
+                "Mathematics\n"
+                "2012-2016 Bachelor\n"
+                "2016-2018 Master\n"
+            ),
+            checksum="edu-multi-stage",
+        )
+
+    async with db_sessionmaker() as session:
+        payload = _happy_payload()
+        payload["education"] = [
+            {
+                "institution_raw": "ITMO University",
+                "degree_raw": "Bachelor",
+                "degree_normalized": "bachelor",
+                "field_of_study": "Mathematics",
+                "start_date": "2012-01-01",
+                "end_date": "2016-01-01",
+                "confidence": 0.92,
+            },
+            {
+                "institution_raw": "ITMO University",
+                "degree_raw": "Master",
+                "degree_normalized": "master",
+                "field_of_study": "Mathematics",
+                "start_date": "2016-01-01",
+                "end_date": "2018-01-01",
+                "confidence": 0.94,
+            },
+        ]
+
+        service = CandidateEntityExtractionService(
+            session,
+            llm_client=FakeLLMClient(payload),
+            skill_normalizer=FakeSkillNormalizer(),
+        )
+        await service.run(document_id)
+        result = await service.get_result(document_id)
+
+        assert len(result.education) == 2
+        assert [item.degree_normalized for item in result.education] == [
+            "bachelor",
+            "master",
+        ]
+        assert [item.start_date.isoformat() if item.start_date else None for item in result.education] == [
+            "2012-01-01",
+            "2016-01-01",
+        ]
+        assert [item.end_date.isoformat() if item.end_date else None for item in result.education] == [
+            "2016-01-01",
+            "2018-01-01",
+        ]
+
+@pytest.mark.asyncio
 async def test_entity_extraction_rerun_replaces_previous_entities(db_sessionmaker):
     async with db_sessionmaker() as session:
         _, document_id = await _create_document(

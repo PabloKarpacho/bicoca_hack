@@ -8,8 +8,17 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 class ExtractedCandidateProfile(BaseModel):
     full_name: str | None = None
-    email: str | None = None
-    phone: str | None = None
+    email: str | None = Field(
+        default=None,
+        description="Candidate email address exactly as stated in the CV.",
+    )
+    phone: str | None = Field(
+        default=None,
+        description=(
+            "Real phone number only. Do not use years, date ranges, IDs, or arbitrary "
+            "digit sequences. If no clear phone number is present, use null."
+        ),
+    )
     location_raw: str | None = None
     linkedin_url: str | None = None
     github_url: str | None = None
@@ -59,7 +68,13 @@ class ExtractedSkill(BaseModel):
 class ExtractedEducation(BaseModel):
     institution_raw: str | None = None
     degree_raw: str | None = None
-    degree_normalized: str | None = None
+    degree_normalized: str | None = Field(
+        default=None,
+        description=(
+            "Canonical degree level only. Use one of: secondary, associate, "
+            "bachelor, master, phd. Use null if unclear."
+        ),
+    )
     field_of_study: str | None = None
     start_date: str | None = None
     end_date: str | None = None
@@ -94,12 +109,19 @@ class ExtractedJobSearchProfile(BaseModel):
 
 class CVEntityExtractionLLMOutput(BaseModel):
     profile: ExtractedCandidateProfile = Field(
-        default_factory=ExtractedCandidateProfile
+        default_factory=ExtractedCandidateProfile,
+        description="Top-level candidate profile information extracted from the CV.",
     )
     languages: list[ExtractedLanguage] = Field(default_factory=list)
     experiences: list[ExtractedExperience] = Field(default_factory=list)
     skills: list[ExtractedSkill] = Field(default_factory=list)
-    education: list[ExtractedEducation] = Field(default_factory=list)
+    education: list[ExtractedEducation] = Field(
+        default_factory=list,
+        description=(
+            "All education stages from the CV. Keep sequential degrees as separate "
+            "entries, even if they belong to the same university and field of study."
+        ),
+    )
     certifications: list[ExtractedCertification] = Field(default_factory=list)
 
 

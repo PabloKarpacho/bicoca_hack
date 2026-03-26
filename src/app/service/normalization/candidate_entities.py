@@ -42,7 +42,6 @@ if TYPE_CHECKING:
     from app.service.normalization.service import EntityNormalizationService
 
 EMAIL_RE = re.compile(r"[\w.+-]+@[\w.-]+\.\w+")
-PHONE_RE = re.compile(r"(?:(?:\+?\d[\d .()-]{7,}\d))")
 URL_RE = re.compile(r"https?://[^\s)>,]+")
 
 
@@ -138,7 +137,7 @@ async def _normalize_profile(
 ) -> CandidateProfileData:
     urls = URL_RE.findall(raw_text)
     email = extracted_profile.email or candidate_email or _first_match(EMAIL_RE, raw_text)
-    phone = extracted_profile.phone or _first_match(PHONE_RE, raw_text)
+    phone = _clean_text(extracted_profile.phone)
     linkedin_url = extracted_profile.linkedin_url or _first_url(urls, "linkedin.com")
     github_url = extracted_profile.github_url or _first_url(urls, "github.com")
     portfolio_url = extracted_profile.portfolio_url or _first_non_profile_url(urls)

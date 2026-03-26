@@ -38,6 +38,10 @@ Required top-level keys:
 Rules:
 - Use null for unknown scalar values.
 - Use [] for unknown arrays.
+- profile.phone must contain only an actual phone number stated in the CV.
+- Do not put arbitrary digit sequences, year ranges, employment dates, education dates, IDs, or document numbers into profile.phone.
+- Values such as "2019", "2010-2015", "2012 2016", or other date-like numeric ranges are not phone numbers and must not be extracted as phone.
+- If the CV does not clearly contain a real phone number, set profile.phone=null.
 - If the CV mentions preferred work format, profile.remote_policies must be a list containing only values from: remote, hybrid, onsite.
 - Do not invent remote policies. Use [] when not stated.
 - If the CV mentions preferred employment arrangement, profile.employment_types must be a list containing only values from: full_time, part_time, contract, internship.
@@ -45,6 +49,9 @@ Rules:
 - education entries must use degree_normalized only from this closed set when the level can be inferred reliably: secondary, associate, bachelor, master, phd.
 - For education, prefer canonical degree levels in degree_normalized and keep degree_raw as stated in the CV.
 - If the exact education level is unclear, set degree_normalized=null instead of inventing a new value.
+- Do not collapse multiple education stages into one entry just because they belong to the same university or field of study.
+- If the CV shows sequential degrees such as Bachelor and Master at the same university, return separate education entries for each degree with their own dates and raw labels.
+- Preserve distinct education stages even when the institution and field are identical; do not merge them into a single longest date range with only the highest degree.
 - Prefer ISO dates: YYYY-MM-DD. If only month is known, use the first day of month. If only year is known, use January 1st.
 - Set is_current=true when the role is current, and end_date=null in that case.
 - Keep summaries concise and factual.
