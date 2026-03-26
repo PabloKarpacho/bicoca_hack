@@ -87,8 +87,11 @@ class CandidateVectorSearchService:
             key=lambda item: ((item.score or 0.0), item.candidate_id),
             reverse=True,
         )
-        sliced = ordered_items[filters.offset : filters.offset + filters.limit]
-        profiles = await self._load_profiles(sliced)
+        profiles = await self._load_profiles(ordered_items)
+        filtered_items = [
+            item for item in ordered_items if item.document_id in profiles
+        ]
+        sliced = filtered_items[filters.offset : filters.offset + filters.limit]
         items = []
         for item in sliced:
             profile = profiles.get(item.document_id)
@@ -134,11 +137,11 @@ class CandidateVectorSearchService:
             )
         logger.info(
             "Candidate vector search: completed candidates={total}, returned_items={returned_items}",
-            total=len(ordered_items),
+            total=len(filtered_items),
             returned_items=len(items),
         )
         return CandidateSearchResult(
-            total=len(ordered_items),
+            total=len(filtered_items),
             items=items,
             applied_filters=filters,
         )

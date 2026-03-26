@@ -19,6 +19,7 @@ from fastapi.responses import Response
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.config.enums.document_status import DocumentProcessingStatus
 from app.config.enums.processing_stage import ProcessingStage
 from app.config.enums.search_strategy import SearchStrategy
@@ -993,7 +994,7 @@ async def delete_file(
     file_id: str,
     session: AsyncSession = Depends(get_db_session),
 ) -> DeleteFileResponse:
-    """Delete a stored file from S3 and remove its database record.
+    """Delete a stored file and remove all of its search-visible artifacts.
 
     Args:
         request: FastAPI request with initialized application services.
@@ -1011,18 +1012,38 @@ async def delete_file(
             detail="Document not found",
         )
 
-    if document.storage_key:
-        await request.app.state.s3.delete_file(
-            key=document.storage_key,
-            bucket_name=document.storage_bucket
-            or request.app.state.cv_storage.bucket_name,
-        )
-
+    storage_key = document.storage_key
+    storage_bucket = document.storage_bucket or request.app.state.cv_storage.bucket_name
     await session.delete(document)
     await session.commit()
 
+    if storage_key:
+        try:
+            await request.app.state.s3.delete_file(
+                key=storage_key,
+                bucket_name=storage_bucket,
+            )
+        except Exception:
+            logger.exception(
+                "Failed to delete resume file from object storage for file_id={file_id}",
+                file_id=file_id,
+            )
+
+    qdrant = getattr(request.app.state, "qdrant", None)
+    if qdrant is not None:
+        try:
+            await qdrant.delete_vectors_by_document_id(
+                settings.qdrant_candidate_chunks_collection_name,
+                file_id,
+            )
+        except Exception:
+            logger.exception(
+                "Failed to delete Qdrant vectors for file_id={file_id}",
+                file_id=file_id,
+            )
+
     logger.info(
-        "RAG file deleted: file_id={file_id}",
+        "RAG file deleted and removed from search artifacts: file_id={file_id}",
         file_id=file_id,
     )
     return DeleteFileResponse(file_id=file_id)
