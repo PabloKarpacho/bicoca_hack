@@ -15,7 +15,6 @@
         label="Resume file"
         filled
         clearable
-        use-chips
         accept=".pdf,.doc,.docx"
         @update:model-value="onFileChange"
       >
@@ -59,19 +58,8 @@ const emit = defineEmits<{
 
 const selectedFile = ref<File | null>(null);
 
-function onFileChange(value: unknown): void {
-  if (value instanceof File) {
-    selectedFile.value = value;
-    return;
-  }
-
-  if (Array.isArray(value)) {
-    const firstFile = value[0];
-    selectedFile.value = firstFile instanceof File ? firstFile : null;
-    return;
-  }
-
-  selectedFile.value = null;
+function onFileChange(value: File | null): void {
+  selectedFile.value = value instanceof File ? value : null;
 }
 
 function clearFile(): void {
