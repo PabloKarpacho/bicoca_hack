@@ -195,6 +195,20 @@ def merge_hybrid_results(
     )
 
 
+def paginate_search_result(
+    *,
+    result: CandidateSearchResult,
+    limit: int,
+    offset: int,
+) -> CandidateSearchResult:
+    """Return a paginated copy of an already computed search result."""
+    return CandidateSearchResult(
+        total=result.total,
+        items=result.items[offset : offset + limit],
+        applied_filters=result.applied_filters,
+    )
+
+
 async def enrich_search_results_with_resume_links(
     *,
     session: AsyncSession,
@@ -762,7 +776,10 @@ async def search_candidates(
         )
     if search_strategy == SearchStrategy.HYBRID:
         rule_service = CandidateRuleSearchService(session)
-        rule_result = await rule_service.search(filters)
+        shortlist_limit = max(filters.limit * 5, 50)
+        rule_result = await rule_service.search(
+            filters.model_copy(update={"limit": shortlist_limit, "offset": 0})
+        )
         if rule_result.total == 0:
             return await enrich_search_results_with_resume_links(
                 session=session,
@@ -794,7 +811,11 @@ async def search_candidates(
                 )
                 return await enrich_search_results_with_resume_links(
                     session=session,
-                    result=rule_result,
+                    result=paginate_search_result(
+                        result=rule_result,
+                        limit=filters.limit,
+                        offset=filters.offset,
+                    ),
                 )
             status_code = (
                 status.HTTP_503_SERVICE_UNAVAILABLE
@@ -805,13 +826,18 @@ async def search_candidates(
         if vector_result.total == 0:
             return await enrich_search_results_with_resume_links(
                 session=session,
-                result=rule_result,
+                result=paginate_search_result(
+                    result=rule_result,
+                    limit=filters.limit,
+                    offset=filters.offset,
+                ),
             )
         merged_result = merge_hybrid_results(
             original_filters=filters,
             rule_result=rule_result,
             vector_result=vector_result,
         )
+        merged_result.items = merged_result.items[filters.offset : filters.offset + filters.limit]
         return await enrich_search_results_with_resume_links(
             session=session,
             result=merged_result,

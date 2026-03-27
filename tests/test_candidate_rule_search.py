@@ -386,8 +386,10 @@ async def test_rule_search_language_with_proficiency(db_sessionmaker):
             )
         )
 
-        assert result.total == 2
-        assert [item.full_name for item in result.items] == ["Alice", "Carol"]
+        assert result.total == 4
+        assert [item.full_name for item in result.items[:2]] == ["Alice", "Carol"]
+        assert result.items[0].match_metadata is not None
+        assert result.items[0].match_metadata.matched_languages == ["English"]
 
 
 @pytest.mark.asyncio
@@ -404,8 +406,10 @@ async def test_rule_search_seniority_and_min_experience(db_sessionmaker):
             )
         )
 
-        assert result.total == 2
-        assert [item.full_name for item in result.items] == ["Alice", "Carol"]
+        assert result.total == 4
+        assert [item.full_name for item in result.items[:2]] == ["Alice", "Carol"]
+        assert result.items[0].match_score_percent is not None
+        assert result.items[0].match_score_percent >= result.items[1].match_score_percent
 
 
 @pytest.mark.asyncio
@@ -593,8 +597,10 @@ async def test_rule_search_multiple_filters_together(db_sessionmaker):
             )
         )
 
-        assert result.total == 1
+        assert result.total == 4
         assert result.items[0].full_name == "Alice"
+        assert result.items[0].match_score_percent is not None
+        assert result.items[0].match_score_percent > (result.items[1].match_score_percent or 0)
 
 
 @pytest.mark.asyncio
@@ -617,3 +623,30 @@ async def test_rule_search_current_title_is_not_a_hard_filter(db_sessionmaker):
             "Carol",
             "Dave",
         ]
+
+
+@pytest.mark.asyncio
+async def test_rule_search_keeps_results_even_when_many_filters_do_not_overlap(
+    db_sessionmaker,
+):
+    async with db_sessionmaker() as session:
+        await _seed_search_data(session)
+    async with db_sessionmaker() as session:
+        result = await CandidateRuleSearchService(session).search(
+            CandidateSearchFilters(
+                current_title_normalized=["site reliability engineer"],
+                seniority_normalized=["lead"],
+                min_total_experience_months=120,
+                location_normalized=["Paris"],
+                languages=[
+                    CandidateLanguageFilter(
+                        language_normalized="German",
+                        min_proficiency_normalized="native",
+                    )
+                ],
+                certifications=["kubernetes administrator"],
+            )
+        )
+
+        assert result.total == 4
+        assert len(result.items) == 4

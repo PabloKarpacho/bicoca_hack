@@ -345,6 +345,60 @@ async def test_vector_search_aggregates_chunks_by_candidate(db_sessionmaker):
 
 
 @pytest.mark.asyncio
+async def test_vector_search_relaxes_threshold_when_initial_query_returns_no_hits(
+    db_sessionmaker,
+):
+    fake_qdrant = FakeQdrant()
+    async with db_sessionmaker() as session:
+        _, document_a = await _seed_candidate(
+            session,
+            external_id="alice",
+            full_name="Alice",
+            current_title_normalized="backend_engineer",
+            seniority_normalized="senior",
+            total_experience_months=72,
+            summary="Backend engineer focused on Python and fintech APIs.",
+            skills=["python", "fastapi", "postgresql"],
+            languages=["english"],
+            proficiency="professional",
+            experience_title="backend_engineer",
+            company="Example Inc",
+            domain="fintech",
+        )
+        indexing = CandidateVectorIndexingService(
+            session=session,
+            qdrant=fake_qdrant,
+            embedding_service=CandidateEmbeddingService(
+                embeddings=FakeEmbeddings(),
+                model_version="fake-embeddings-v1",
+            ),
+            collection_name="candidate_chunks",
+        )
+        await indexing.index_document(document_a)
+
+        search = CandidateVectorSearchService(
+            session=session,
+            qdrant=fake_qdrant,
+            embedding_service=CandidateEmbeddingService(
+                embeddings=FakeEmbeddings(),
+                model_version="fake-embeddings-v1",
+            ),
+            collection_name="candidate_chunks",
+        )
+        result = await search.search(
+            CandidateSearchFilters(
+                query_text="python backend fintech",
+                score_threshold=0.99,
+                limit=5,
+            )
+        )
+
+        assert result.total == 1
+        assert result.items[0].full_name == "Alice"
+        assert result.items[0].score is not None
+
+
+@pytest.mark.asyncio
 async def test_vector_search_respects_shortlist_candidate_ids(db_sessionmaker):
     fake_qdrant = FakeQdrant()
     async with db_sessionmaker() as session:

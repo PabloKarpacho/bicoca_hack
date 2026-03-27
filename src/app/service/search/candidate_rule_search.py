@@ -47,6 +47,16 @@ class CandidateRuleSearchService:
     session: AsyncSession
 
     async def search(self, filters: CandidateSearchFilters) -> CandidateSearchResult:
+        """Run recall-first structured search and rank by soft evidence.
+
+        This search mode intentionally avoids hard-filtering away candidates for most
+        recruiter inputs. Instead of treating titles, languages, experience, or
+        certifications as strict SQL gates, we load the available candidate set,
+        compute structured overlap metadata, and sort by the explainable match score.
+
+        The only scope-narrowing filter we keep at the SQL level is an explicit
+        shortlist via `candidate_ids`.
+        """
         applied_filters = self._normalize_filters(filters)
         logger.info(
             "Candidate rule search: start candidate_ids={candidate_ids}, requested_skills={requested_skills}, languages={languages}, domains={domains}, sort_by={sort_by}, sort_order={sort_order}, limit={limit}, offset={offset}",
@@ -62,23 +72,14 @@ class CandidateRuleSearchService:
 
         conditions = self._build_conditions(applied_filters)
         logger.debug("Candidate rule search: built conditions: {conditions}", conditions=conditions)
-        base_stmt = select(CandidateProfile).where(*conditions)
-
-        total_stmt = select(func.count()).select_from(base_stmt.subquery())
-        total = await self.session.scalar(total_stmt)
-
         sort_column = self._sort_column(applied_filters.sort_by)
         order_clause = (
             sort_column.asc() if applied_filters.sort_order == "asc" else sort_column.desc()
         )
-        stmt = (
-            base_stmt.order_by(
-                order_clause,
-                CandidateProfile.candidate_id.asc(),
-                CandidateProfile.document_id.asc(),
-            )
-            .offset(applied_filters.offset)
-            .limit(applied_filters.limit)
+        stmt = select(CandidateProfile).where(*conditions).order_by(
+            order_clause,
+            CandidateProfile.candidate_id.asc(),
+            CandidateProfile.document_id.asc(),
         )
         result = await self.session.execute(stmt)
         profiles = list(result.scalars().all())
@@ -92,14 +93,17 @@ class CandidateRuleSearchService:
             )
             for profile in profiles
         ]
+        items = self._rank_result_items(items)
+        total = len(items)
+        items = items[applied_filters.offset : applied_filters.offset + applied_filters.limit]
 
         logger.info(
             "Candidate rule search: completed total={total}, returned_items={returned_items}",
-            total=total or 0,
+            total=total,
             returned_items=len(items),
         )
         return CandidateSearchResult(
-            total=total or 0,
+            total=total,
             items=items,
             applied_filters=applied_filters,
         )
@@ -140,42 +144,16 @@ class CandidateRuleSearchService:
         )
 
     def _build_conditions(self, filters: CandidateSearchFilters) -> list:
+        """Build only scope-narrowing SQL conditions.
+
+        Most structured filters are intentionally *not* turned into hard SQL
+        predicates. They are consumed later as evidence for ranking and metadata so
+        that the search can still surface candidates even when exact overlap is weak.
+        """
         conditions = [literal(True)]
 
         if filters.candidate_ids:
             conditions.append(CandidateProfile.candidate_id.in_(filters.candidate_ids))
-
-        if filters.seniority_normalized:
-            conditions.append(
-                func.lower(CandidateProfile.seniority_normalized).in_(
-                    filters.seniority_normalized
-                )
-            )
-
-        if filters.min_total_experience_months is not None:
-            conditions.append(
-                func.coalesce(CandidateProfile.total_experience_months, 0)
-                >= filters.min_total_experience_months
-            )
-
-        if filters.max_total_experience_months is not None:
-            conditions.append(
-                func.coalesce(CandidateProfile.total_experience_months, 0)
-                <= filters.max_total_experience_months
-            )
-
-        if filters.location_normalized:
-            conditions.append(
-                func.lower(func.trim(CandidateProfile.location_raw)).in_(
-                    filters.location_normalized
-                )
-            )
-
-        conditions.extend(self._build_skill_conditions(filters))
-        conditions.extend(self._build_language_conditions(filters))
-        conditions.extend(self._build_experience_conditions(filters))
-        conditions.extend(self._build_education_conditions(filters))
-        conditions.extend(self._build_certification_conditions(filters))
         return conditions
 
     def _build_skill_conditions(self, filters: CandidateSearchFilters) -> list:
@@ -300,6 +278,30 @@ class CandidateRuleSearchService:
         if sort_by == "full_name":
             return func.lower(func.coalesce(CandidateProfile.full_name, ""))
         return CandidateProfile.updated_at
+
+    def _rank_result_items(
+        self,
+        items: list[CandidateSearchResultItem],
+    ) -> list[CandidateSearchResultItem]:
+        """Sort candidates by recruiter-facing fit before pagination.
+
+        SQL ordering remains useful as a stable fallback, but once we have match
+        scores we prefer them over raw update timestamps. This keeps the broad,
+        recall-first result set usable by surfacing the strongest candidates first.
+        """
+
+        if not any(item.match_score_percent is not None for item in items):
+            return items
+
+        return sorted(
+            items,
+            key=lambda item: (
+                -(item.match_score_percent or -1),
+                -(item.total_experience_months or -1),
+                (item.full_name or "").strip().lower(),
+                item.candidate_id,
+            ),
+        )
 
     async def _load_match_metadata(
         self,

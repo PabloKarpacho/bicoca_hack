@@ -47,6 +47,21 @@ class CandidateVectorSearchService:
         self.embedding_service = self.embedding_service or CandidateEmbeddingService()
 
     async def search(self, filters: CandidateSearchFilters) -> CandidateSearchResult:
+        """Run recall-first vector search over candidate chunks.
+
+        The service intentionally prefers showing *some* semantic evidence over
+        returning an empty page just because the configured threshold is too strict.
+        Current behavior:
+
+        - perform the requested vector search with the supplied score threshold
+        - if that produces no hits and the threshold was above 0.0, retry once with
+          a relaxed threshold of 0.0
+        - aggregate chunk hits into candidate-level results using the existing
+          type-aware top-k policy
+
+        This keeps explicit threshold control available for callers while still
+        preventing "no results" situations caused by an overly aggressive default.
+        """
         if self.qdrant is None:
             raise CandidateVectorSearchError("Qdrant is not configured")
         query_text = self._build_query_text(filters)
@@ -81,6 +96,22 @@ class CandidateVectorSearchService:
             )
         except ValueError:
             raw_hits = []
+        if not raw_hits and filters.score_threshold > 0.0:
+            logger.info(
+                "Candidate vector search: no hits above threshold={threshold}, retrying with relaxed threshold=0.0",
+                threshold=filters.score_threshold,
+            )
+            try:
+                raw_hits = await self.qdrant.search_points(
+                    collection_name=self.collection_name,
+                    query_vector=query_vector,
+                    limit=max(filters.limit * 5, filters.limit),
+                    candidate_ids=filters.candidate_ids,
+                    chunk_types=chunk_types,
+                    score_threshold=0.0,
+                )
+            except ValueError:
+                raw_hits = []
         aggregated = self._aggregate_hits(raw_hits)
         ordered_items = sorted(
             aggregated.values(),
