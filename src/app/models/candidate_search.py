@@ -145,7 +145,7 @@ class CandidateSearchFilters(BaseModel):
         description="Explicit vector chunk types to search over. Overrides automatic intent-based selection.",
     )
     score_threshold: float = Field(
-        default=0.75,
+        default=0.6,
         ge=0.0,
         le=1.0,
         description="Minimum vector similarity threshold for chunk retrieval.",
