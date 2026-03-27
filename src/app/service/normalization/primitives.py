@@ -196,10 +196,20 @@ def normalize_skill_name(value: str | None) -> str | None:
 
 
 def normalize_language_level(value: str | None) -> str | None:
+    """Map free-form language proficiency text to one canonical level.
+
+    Only the project's canonical levels are returned:
+    `native`, `fluent`, `professional`, `intermediate`, `basic`.
+
+    Returning the original unknown string is intentionally avoided, because several
+    Pydantic models use `Literal` typing for proficiency fields. Keeping an
+    unrecognized value such as "a plus" would otherwise leak invalid data into later
+    validation steps and fail the whole pipeline.
+    """
     if not value:
         return None
     normalized = value.strip().lower()
-    return LANGUAGE_LEVELS.get(normalized, normalized if normalized else None)
+    return LANGUAGE_LEVELS.get(normalized)
 
 
 def normalize_language_name(value: str | None) -> str | None:

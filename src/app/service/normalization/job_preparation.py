@@ -14,6 +14,7 @@ from app.models.job_search import (
 from app.service.normalization.primitives import (
     extract_remote_policies,
     infer_seniority,
+    normalize_language_level,
     normalize_job_title,
 )
 from app.service.normalization.skill_utils import normalize_skill_value
@@ -131,18 +132,21 @@ async def _normalize_languages(items, *, normalization_service: EntityNormalizat
         language = _clean_text(item.language_normalized or item.language_raw)
         if language is None:
             continue
-        proficiency = _clean_text(
-            item.min_proficiency_normalized or item.proficiency_normalized or item.proficiency_raw
+        raw_proficiency = _clean_text(
+            item.min_proficiency_normalized
+            or item.proficiency_normalized
+            or item.proficiency_raw
         )
+        proficiency = normalize_language_level(raw_proficiency)
         if normalization_service is not None:
             language_result = await normalization_service.normalize(
                 original_value=language,
                 normalization_class=NormalizationClass.LANGUAGES,
             )
             language = language_result.normalized_value or language
-        if normalization_service is not None and proficiency is not None:
+        if normalization_service is not None and raw_proficiency is not None:
             proficiency_result = await normalization_service.normalize(
-                original_value=proficiency,
+                original_value=raw_proficiency,
                 normalization_class=NormalizationClass.PROFICIENCY_LEVELS,
             )
             proficiency = proficiency_result.normalized_value or proficiency

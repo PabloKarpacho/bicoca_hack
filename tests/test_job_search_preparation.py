@@ -266,3 +266,35 @@ async def test_job_search_preparation_demotes_pm_process_phrases_to_semantic_sig
         assert result.query_text_skills is not None
         assert "Required skills: agile scrum, project planning, risk management, resource planning." in result.query_text_skills
         assert "Delivery signals: sprint planning, retrospectives, cashflow control, two-week sprints." in result.query_text_skills
+
+
+@pytest.mark.asyncio
+async def test_job_search_preparation_ignores_unknown_language_proficiency_labels(
+    db_sessionmaker,
+):
+    async with db_sessionmaker() as session:
+        payload = _job_payload()
+        payload["required_languages"] = [
+            {
+                "language_normalized": "English",
+                "min_proficiency_normalized": "A plus",
+                "required": True,
+            }
+        ]
+        service = JobSearchPreparationService(
+            session,
+            llm_client=FakeJobLLMClient(payload),
+            skill_normalizer=FakeSkillNormalizer(),
+        )
+
+        result = await service.run(
+            JobSearchPreparationRequest(
+                job_id="job-lang-a-plus",
+                raw_text="English A plus",
+            )
+        )
+
+        assert result.languages is not None
+        assert len(result.languages) == 1
+        assert result.languages[0].language_normalized == "English"
+        assert result.languages[0].min_proficiency_normalized is None

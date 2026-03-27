@@ -13,6 +13,7 @@ from app.models.common_types import (
     SeniorityLiteral,
 )
 from app.models.entity_extraction import JobSearchExtractionLLMOutput
+from app.service.normalization.primitives import normalize_language_level
 
 
 class JobSearchPreparationRequest(BaseModel):
@@ -33,6 +34,23 @@ class PreparedJobLanguageRequirement(BaseModel):
         default=True,
         description="Whether this language is mandatory for the role.",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_proficiency_literal(cls, data):
+        """Coerce free-form proficiency values into the canonical literal set.
+
+        Job preparation may still encounter raw phrases such as "Advanced" or noisy
+        labels like "A plus". We normalize known variants to canonical values and
+        gracefully demote unknown ones to `None` so that one bad language label does
+        not fail the whole vacancy preparation pipeline.
+        """
+        if not isinstance(data, dict):
+            return data
+        proficiency = data.get("min_proficiency_normalized")
+        if proficiency is not None:
+            data["min_proficiency_normalized"] = normalize_language_level(proficiency)
+        return data
 
 
 class PreparedJobRuleFilters(BaseModel):
@@ -130,4 +148,3 @@ class JobSearchProcessingMetadata(BaseModel):
     error_message: str | None = Field(default=None, description="Error message if preparation failed.")
     started_at: datetime | None = Field(default=None, description="Timestamp when preparation started.")
     finished_at: datetime | None = Field(default=None, description="Timestamp when preparation finished.")
-
