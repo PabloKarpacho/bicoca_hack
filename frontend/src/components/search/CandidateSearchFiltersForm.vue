@@ -204,7 +204,7 @@
                   @update:model-value="
                     (value) =>
                       updateLanguage(index, {
-                        minProficiency: value ? String(value) : null,
+                        minProficiency: value ? (String(value) as ProficiencyLevel) : null,
                       })
                   "
                 />
@@ -252,6 +252,7 @@ import { getApiClients } from '../../api';
 import type {
   CandidateSearchFilters,
   LanguageRequirementFilter,
+  ProficiencyLevel,
   SkillSuggestion,
 } from '../../types/search';
 import {

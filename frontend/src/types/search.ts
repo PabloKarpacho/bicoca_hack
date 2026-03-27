@@ -1,9 +1,15 @@
 export interface LanguageRequirementFilter {
   language: string;
-  minProficiency?: string | null;
+  minProficiency?: ProficiencyLevel | null;
 }
 
 export type SkillSourceType = 'explicit' | 'inferred_from_experience' | 'any';
+export type ProficiencyLevel =
+  | 'native'
+  | 'fluent'
+  | 'professional'
+  | 'intermediate'
+  | 'basic';
 
 export interface SkillSuggestion {
   id: number;
@@ -91,7 +97,13 @@ export interface CandidateSearchResponse {
 }
 
 export const SENIORITY_OPTIONS = ['junior', 'middle', 'senior', 'lead', 'manager'];
-export const PROFICIENCY_OPTIONS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'native'];
+export const PROFICIENCY_OPTIONS: ProficiencyLevel[] = [
+  'native',
+  'fluent',
+  'professional',
+  'intermediate',
+  'basic',
+];
 export const REMOTE_POLICY_OPTIONS = ['remote', 'hybrid', 'onsite'];
 export const EMPLOYMENT_TYPE_OPTIONS = [
   'full_time',

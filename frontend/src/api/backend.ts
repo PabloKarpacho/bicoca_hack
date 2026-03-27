@@ -12,10 +12,11 @@ import type {
   CandidateSearchResultItem,
   JobSearchPreparationInput,
   LanguageRequirementFilter,
+  ProficiencyLevel,
   SkillSourceType,
   SkillSuggestion,
 } from '../types/search';
-import { createDefaultCandidateSearchFilters } from '../types/search';
+import { createDefaultCandidateSearchFilters, PROFICIENCY_OPTIONS } from '../types/search';
 import { apiRequest } from './http';
 
 interface BackendUploadResponse {
@@ -75,6 +76,17 @@ interface BackendDocumentListResponse {
 interface BackendCandidateSearchLanguageFilter {
   language_normalized: string;
   min_proficiency_normalized?: string | null;
+}
+
+function normalizeFrontendProficiency(
+  value: string | null | undefined,
+): ProficiencyLevel | null {
+  if (!value) {
+    return null;
+  }
+  return PROFICIENCY_OPTIONS.includes(value as ProficiencyLevel)
+    ? (value as ProficiencyLevel)
+    : null;
 }
 
 interface BackendCandidateSearchFilters {
@@ -309,7 +321,7 @@ function fromBackendSearchFilters(
     languages:
       filters.languages?.map((item) => ({
         language: item.language_normalized,
-        minProficiency: item.min_proficiency_normalized ?? null,
+        minProficiency: normalizeFrontendProficiency(item.min_proficiency_normalized),
       })) ?? [],
     requireAllLanguages: filters.require_all_languages ?? defaults.requireAllLanguages,
     includeSkills: filters.include_skills ?? [],
