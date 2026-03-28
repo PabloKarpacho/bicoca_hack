@@ -171,6 +171,7 @@ class CandidateDocumentText(Base):
         back_populates="text",
     )
 
+
 class CandidateProfile(Base):
     """Stores normalized candidate profile fields extracted from one CV document."""
 
@@ -428,9 +429,7 @@ class CandidateEducation(Base):
     position_order: Mapped[int] = mapped_column(Integer(), nullable=False, default=1)
     institution_raw: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     degree_raw: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    degree_normalized: Mapped[Optional[str]] = mapped_column(
-        String(255), nullable=True
-    )
+    degree_normalized: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     field_of_study: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     start_date: Mapped[Optional[date]] = mapped_column(Date(), nullable=True)
     end_date: Mapped[Optional[date]] = mapped_column(Date(), nullable=True)
@@ -532,10 +531,14 @@ class CandidateDocumentChunk(Base):
     chunk_type: Mapped[str] = mapped_column(String(100), nullable=False)
     chunk_text: Mapped[str] = mapped_column(Text(), nullable=False)
     chunk_hash: Mapped[str] = mapped_column(String(64), nullable=False)
-    source_entity_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    source_entity_type: Mapped[Optional[str]] = mapped_column(
+        String(100), nullable=True
+    )
     source_entity_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     chunk_metadata_json: Mapped[Optional[str]] = mapped_column(Text(), nullable=True)
-    embedding_status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")
+    embedding_status: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="pending"
+    )
     embedding_model_version: Mapped[Optional[str]] = mapped_column(
         String(255), nullable=True
     )
@@ -676,7 +679,9 @@ class JobSearchProfile(Base):
         index=True,
     )
     job_id: Mapped[str] = mapped_column(String(100), nullable=False)
-    source_document_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    source_document_id: Mapped[Optional[str]] = mapped_column(
+        String(100), nullable=True
+    )
     raw_title: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     normalized_title: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     seniority_normalized: Mapped[Optional[str]] = mapped_column(
@@ -820,7 +825,9 @@ class JobProcessingRun(Base):
         Index("idx_job_processing_run_job_id", "job_id"),
         Index("idx_job_processing_run_stage", "pipeline_stage"),
         Index("idx_job_processing_run_status", "status"),
-        UniqueConstraint("job_id", "pipeline_stage", name="uq_job_processing_run_job_stage"),
+        UniqueConstraint(
+            "job_id", "pipeline_stage", name="uq_job_processing_run_job_stage"
+        ),
     )
 
     job_processing_run_id: Mapped[str] = mapped_column(
@@ -830,7 +837,9 @@ class JobProcessingRun(Base):
         index=True,
     )
     job_id: Mapped[str] = mapped_column(String(100), nullable=False)
-    source_document_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    source_document_id: Mapped[Optional[str]] = mapped_column(
+        String(100), nullable=True
+    )
     pipeline_stage: Mapped[str] = mapped_column(String(100), nullable=False)
     status: Mapped[str] = mapped_column(String(100), nullable=False)
     pipeline_version: Mapped[str] = mapped_column(String(100), nullable=False)

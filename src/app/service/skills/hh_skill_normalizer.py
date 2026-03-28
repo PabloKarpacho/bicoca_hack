@@ -24,9 +24,7 @@ CacheValueT = TypeVar("CacheValueT")
 @dataclass(slots=True)
 class InMemoryTTLCache(Generic[CacheValueT]):
     ttl_seconds: int
-    _store: dict[str, tuple[float, CacheValueT]] = field(
-        default_factory=dict
-    )
+    _store: dict[str, tuple[float, CacheValueT]] = field(default_factory=dict)
 
     def get(self, key: str) -> CacheValueT | None:
         now = time.monotonic()
@@ -76,7 +74,9 @@ class HHSkillAutosuggestClient:
                 response = await client.get(url, params=params)
             response.raise_for_status()
         except httpx.TimeoutException as exc:
-            raise HHSkillAutosuggestClientError("HH autosuggest request timed out") from exc
+            raise HHSkillAutosuggestClientError(
+                "HH autosuggest request timed out"
+            ) from exc
         except httpx.HTTPStatusError as exc:
             raise HHSkillAutosuggestClientError(
                 f"HH autosuggest request failed with status {exc.response.status_code}"
@@ -126,7 +126,9 @@ class HHSkillNormalizerService:
         self.max_items_to_consider = max_items_to_consider
         self.min_confidence_threshold = min_confidence_threshold
 
-    async def normalize_skill(self, raw_skill: str | None) -> HHSkillNormalizationResult:
+    async def normalize_skill(
+        self, raw_skill: str | None
+    ) -> HHSkillNormalizationResult:
         normalized_input = _clean_skill(raw_skill)
         logger.info(
             "HH skill normalization: start raw_skill={raw_skill}",

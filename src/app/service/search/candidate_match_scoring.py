@@ -7,7 +7,10 @@ from app.models.candidate_search import (
     CandidateSearchMatchMetadata,
     CandidateSearchScoreBreakdown,
 )
-from app.service.normalization.primitives import normalize_job_title, normalize_skill_name
+from app.service.normalization.primitives import (
+    normalize_job_title,
+    normalize_skill_name,
+)
 
 COMPONENT_WEIGHTS = {
     "vector_semantic_score": 0.55,
@@ -107,7 +110,9 @@ def _calculate_role_match_score(
         if title
     ]
     if filters.title_raw:
-        normalized_title = _normalize_title_token(normalize_job_title(filters.title_raw))
+        normalized_title = _normalize_title_token(
+            normalize_job_title(filters.title_raw)
+        )
         if normalized_title:
             requested_titles.append(normalized_title)
 
@@ -156,7 +161,9 @@ def _calculate_skills_match_score(
     if not required_skills and not optional_skills:
         return None
 
-    matched_skills = set(_normalize_skill_tokens(match_metadata.matched_skills if match_metadata else []))
+    matched_skills = set(
+        _normalize_skill_tokens(match_metadata.matched_skills if match_metadata else [])
+    )
     required_weight = float(len(required_skills))
     optional_weight = float(len(optional_skills)) * 0.5
     denominator = required_weight + optional_weight
@@ -222,7 +229,9 @@ def _calculate_language_match_score(
         for language in (match_metadata.matched_languages if match_metadata else [])
         if language.strip()
     }
-    return _clamp_01(len(requested_languages & matched_languages) / len(requested_languages))
+    return _clamp_01(
+        len(requested_languages & matched_languages) / len(requested_languages)
+    )
 
 
 def _combine_score_components(
@@ -258,7 +267,11 @@ def _combine_score_components(
 def _normalize_title_tokens(values: Iterable[str] | None) -> list[str]:
     if not values:
         return []
-    return [normalized for normalized in (_normalize_title_token(value) for value in values) if normalized]
+    return [
+        normalized
+        for normalized in (_normalize_title_token(value) for value in values)
+        if normalized
+    ]
 
 
 def _normalize_title_token(value: str | None) -> str | None:

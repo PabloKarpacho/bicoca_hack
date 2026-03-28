@@ -17,15 +17,23 @@ from app.service.normalization.primitives import normalize_language_level
 
 
 class JobSearchPreparationRequest(BaseModel):
-    job_id: str | None = Field(default=None, description="Job identifier when the request is tied to a stored job record.")
+    job_id: str | None = Field(
+        default=None,
+        description="Job identifier when the request is tied to a stored job record.",
+    )
     source_document_id: str | None = Field(
         default=None,
         description="Source document identifier that contains the vacancy text, if any.",
     )
-    raw_text: str = Field(description="Raw vacancy text that should be parsed into structured job search requirements.")
+    raw_text: str = Field(
+        description="Raw vacancy text that should be parsed into structured job search requirements."
+    )
+
 
 class PreparedJobLanguageRequirement(BaseModel):
-    language_normalized: str = Field(description="Canonical language name required by the vacancy.")
+    language_normalized: str = Field(
+        description="Canonical language name required by the vacancy."
+    )
     min_proficiency_normalized: ProficiencyLiteral | None = Field(
         default=None,
         description="Minimum acceptable proficiency level for the language requirement.",
@@ -54,14 +62,22 @@ class PreparedJobLanguageRequirement(BaseModel):
 
 
 class PreparedJobRuleFilters(BaseModel):
-    title_raw: str | None = Field(default=None, description="Original vacancy title text.")
-    title_normalized: str | None = Field(default=None, description="Normalized canonical vacancy title.")
+    title_raw: str | None = Field(
+        default=None, description="Original vacancy title text."
+    )
+    title_normalized: str | None = Field(
+        default=None, description="Normalized canonical vacancy title."
+    )
     seniority_normalized: SeniorityLiteral | None = Field(
         default=None,
         description="Normalized seniority required by the vacancy.",
     )
-    location_raw: str | None = Field(default=None, description="Original location text from the vacancy.")
-    location_normalized: str | None = Field(default=None, description="Normalized vacancy location label.")
+    location_raw: str | None = Field(
+        default=None, description="Original location text from the vacancy."
+    )
+    location_normalized: str | None = Field(
+        default=None, description="Normalized vacancy location label."
+    )
     remote_policies: list[RemotePolicyLiteral] | None = Field(
         default=None,
         description="Remote or onsite work arrangements extracted from the vacancy.",
@@ -82,7 +98,10 @@ class PreparedJobRuleFilters(BaseModel):
         default_factory=list,
         description="Optional normalized skills for supportive matching.",
     )
-    domains: list[str] = Field(default_factory=list, description="Business or industry domains extracted from the vacancy.")
+    domains: list[str] = Field(
+        default_factory=list,
+        description="Business or industry domains extracted from the vacancy.",
+    )
     min_experience_months: int | None = Field(
         default=None,
         description="Minimum professional experience requirement converted to months.",
@@ -117,7 +136,9 @@ class PreparedJobRuleFilters(BaseModel):
 
 
 class PreparedJobVectorQueries(BaseModel):
-    main_query_text: str = Field(description="Main semantic query text used for candidate vector search.")
+    main_query_text: str = Field(
+        description="Main semantic query text used for candidate vector search."
+    )
     responsibilities_query_text: str | None = Field(
         default=None,
         description="Optional responsibility-focused semantic query text.",
@@ -129,8 +150,12 @@ class PreparedJobVectorQueries(BaseModel):
 
 
 class PreparedJobSearchData(BaseModel):
-    rule_filters: PreparedJobRuleFilters = Field(description="Structured rule-based filters derived from the vacancy.")
-    vector_queries: PreparedJobVectorQueries = Field(description="Semantic vector queries derived from the vacancy.")
+    rule_filters: PreparedJobRuleFilters = Field(
+        description="Structured rule-based filters derived from the vacancy."
+    )
+    vector_queries: PreparedJobVectorQueries = Field(
+        description="Semantic vector queries derived from the vacancy."
+    )
     extraction_confidence: float | None = Field(
         default=None,
         description="Overall extraction confidence for the prepared vacancy search payload.",
@@ -138,13 +163,25 @@ class PreparedJobSearchData(BaseModel):
 
 
 class JobSearchProcessingMetadata(BaseModel):
-    status: str = Field(description="Processing status for the job preparation pipeline.")
-    pipeline_version: str = Field(description="Pipeline version used for job preparation.")
-    model_version: str | None = Field(default=None, description="Model version used for preparation, when available.")
+    status: str = Field(
+        description="Processing status for the job preparation pipeline."
+    )
+    pipeline_version: str = Field(
+        description="Pipeline version used for job preparation."
+    )
+    model_version: str | None = Field(
+        default=None, description="Model version used for preparation, when available."
+    )
     extraction_confidence: float | None = Field(
         default=None,
         description="Overall extraction confidence for the preparation run.",
     )
-    error_message: str | None = Field(default=None, description="Error message if preparation failed.")
-    started_at: datetime | None = Field(default=None, description="Timestamp when preparation started.")
-    finished_at: datetime | None = Field(default=None, description="Timestamp when preparation finished.")
+    error_message: str | None = Field(
+        default=None, description="Error message if preparation failed."
+    )
+    started_at: datetime | None = Field(
+        default=None, description="Timestamp when preparation started."
+    )
+    finished_at: datetime | None = Field(
+        default=None, description="Timestamp when preparation finished."
+    )

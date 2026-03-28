@@ -69,7 +69,9 @@ class CandidateChunkBuilderService:
         experiences,
         skills,
     ) -> CandidateDocumentChunkData | None:
-        profession_tags = self._collect_profession_tags(profile=profile, experiences=experiences)
+        profession_tags = self._collect_profession_tags(
+            profile=profile, experiences=experiences
+        )
         explicit_skills = self._collect_skills(skills, source_types={"explicit"})
         language_tags = self._collect_languages(languages)
         language_descriptions = self._collect_language_descriptions(languages)
@@ -78,7 +80,9 @@ class CandidateChunkBuilderService:
             _sentence(
                 "Current role",
                 _humanize_role_value(
-                    _first_non_empty(profile.current_title_normalized, profile.current_title_raw)
+                    _first_non_empty(
+                        profile.current_title_normalized, profile.current_title_raw
+                    )
                 ),
             ),
             _sentence("Related roles", _join_values(profession_tags[1:])),
@@ -128,17 +132,23 @@ class CandidateChunkBuilderService:
     ) -> CandidateDocumentChunkData | None:
         technologies = _normalize_csv_values(experience.technologies_text)
         parts = [
-            _sentence("Role", experience.job_title_normalized or experience.job_title_raw),
+            _sentence(
+                "Role", experience.job_title_normalized or experience.job_title_raw
+            ),
             _sentence("Company", experience.company_name_raw),
             _sentence(
                 "Period",
-                _format_date_range(experience.start_date, experience.end_date, experience.is_current),
+                _format_date_range(
+                    experience.start_date, experience.end_date, experience.is_current
+                ),
             ),
             _sentence(
                 "Duration",
-                f"{experience.duration_months} months"
-                if experience.duration_months is not None
-                else None,
+                (
+                    f"{experience.duration_months} months"
+                    if experience.duration_months is not None
+                    else None
+                ),
             ),
             _sentence("Domain", experience.domain_hint),
             _sentence("Responsibilities", experience.responsibilities_text),
@@ -162,14 +172,22 @@ class CandidateChunkBuilderService:
             chunk_metadata={
                 "company_name": experience.company_name_raw,
                 "job_title_normalized": experience.job_title_normalized,
-                "profession_tags": [experience.job_title_normalized]
-                if experience.job_title_normalized
-                else [],
+                "profession_tags": (
+                    [experience.job_title_normalized]
+                    if experience.job_title_normalized
+                    else []
+                ),
                 "skill_tags": technologies,
-                "domain_tags": [experience.domain_hint] if experience.domain_hint else [],
+                "domain_tags": (
+                    [experience.domain_hint] if experience.domain_hint else []
+                ),
                 "is_current_role": experience.is_current,
-                "start_date": experience.start_date.isoformat() if experience.start_date else None,
-                "end_date": experience.end_date.isoformat() if experience.end_date else None,
+                "start_date": (
+                    experience.start_date.isoformat() if experience.start_date else None
+                ),
+                "end_date": (
+                    experience.end_date.isoformat() if experience.end_date else None
+                ),
                 "duration_months": experience.duration_months,
             },
         )
@@ -183,7 +201,9 @@ class CandidateChunkBuilderService:
         experiences,
     ) -> CandidateDocumentChunkData | None:
         explicit_skills = self._collect_skills(skills, source_types={"explicit"})
-        inferred_skills = self._collect_skills(skills, source_types={"inferred_from_experience"})
+        inferred_skills = self._collect_skills(
+            skills, source_types={"inferred_from_experience"}
+        )
         experience_confirmed = self._collect_experience_confirmed_skills(
             explicit_skills=explicit_skills,
             inferred_skills=inferred_skills,
@@ -194,8 +214,15 @@ class CandidateChunkBuilderService:
             return None
         parts = [
             _sentence("Core skills", _join_values(explicit_skills[:14])),
-            _sentence("Confirmed in experience", _join_values(experience_confirmed[:14])),
-            _sentence("Additional tools", _join_values(_diff_values(all_skills, explicit_skills, experience_confirmed)[:10])),
+            _sentence(
+                "Confirmed in experience", _join_values(experience_confirmed[:14])
+            ),
+            _sentence(
+                "Additional tools",
+                _join_values(
+                    _diff_values(all_skills, explicit_skills, experience_confirmed)[:10]
+                ),
+            ),
         ]
         chunk_text = " ".join(part for part in parts if part).strip()
         return CandidateDocumentChunkData(
@@ -227,7 +254,9 @@ class CandidateChunkBuilderService:
                 profession_tags.append(normalized)
         return profession_tags
 
-    def _collect_skills(self, skills, source_types: set[str] | None = None) -> list[str]:
+    def _collect_skills(
+        self, skills, source_types: set[str] | None = None
+    ) -> list[str]:
         values: list[str] = []
         for skill in skills:
             if source_types and skill.source_type not in source_types:
@@ -284,7 +313,9 @@ class CandidateChunkBuilderService:
 
 
 def _chunk_hash(chunk_type: str, chunk_text: str, source: str) -> str:
-    return hashlib.sha256(f"{chunk_type}|{source}|{chunk_text}".encode("utf-8")).hexdigest()
+    return hashlib.sha256(
+        f"{chunk_type}|{source}|{chunk_text}".encode("utf-8")
+    ).hexdigest()
 
 
 def _sentence(label: str, value: str | None) -> str | None:

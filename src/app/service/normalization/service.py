@@ -173,9 +173,11 @@ class EntityNormalizationService:
             provider=result.provider,
             model_version=result.model_version,
             pipeline_version=result.pipeline_version,
-            metadata_json=json.dumps(result.metadata, ensure_ascii=False)
-            if result.metadata is not None
-            else None,
+            metadata_json=(
+                json.dumps(result.metadata, ensure_ascii=False)
+                if result.metadata is not None
+                else None
+            ),
         )
         logger.info(
             "Entity normalization persisted: class={normalization_class}, original_value={original_value}, normalized_value={normalized_value}, status={status}, provider={provider}",
@@ -293,7 +295,9 @@ class EntityNormalizationService:
                 metadata={
                     "external_id": hh_result.normalized_skill_external_id,
                     "match_type": hh_result.match_type,
-                    "alternatives": [item.model_dump() for item in hh_result.alternatives],
+                    "alternatives": [
+                        item.model_dump() for item in hh_result.alternatives
+                    ],
                     "matched_existing_canonical": normalized in canonical_values,
                 },
             )
@@ -374,7 +378,9 @@ class EntityNormalizationService:
                 metadata={
                     "external_id": hh_result.normalized_work_external_id,
                     "match_type": hh_result.match_type,
-                    "alternatives": [item.model_dump() for item in hh_result.alternatives],
+                    "alternatives": [
+                        item.model_dump() for item in hh_result.alternatives
+                    ],
                     "matched_existing_canonical": normalized in canonical_values,
                 },
             )
@@ -476,7 +482,8 @@ def _deterministic_normalize(
     if normalization_class == NormalizationClass.LANGUAGES:
         normalized = normalize_language_name(original_value)
         if normalized and (
-            build_lookup_value(normalized) in {build_lookup_value(item) for item in canonical_values}
+            build_lookup_value(normalized)
+            in {build_lookup_value(item) for item in canonical_values}
             or build_lookup_value(original_value) in LANGUAGE_NAME_SYNONYMS
         ):
             return normalized
@@ -512,7 +519,9 @@ def _deterministic_normalize(
             return normalize_degree(original_value)
         return None
     if normalization_class == NormalizationClass.CITIES:
-        lookup = build_lookup_value(original_value).replace("г. ", "").replace("city ", "")
+        lookup = (
+            build_lookup_value(original_value).replace("г. ", "").replace("city ", "")
+        )
         return CITY_SYNONYMS.get(lookup)
     if normalization_class == NormalizationClass.COUNTRIES:
         return COUNTRY_SYNONYMS.get(build_lookup_value(original_value))

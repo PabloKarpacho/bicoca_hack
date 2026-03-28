@@ -312,7 +312,9 @@ class QdrantAPI:
                 )
             )
 
-        collection_info = await self.client.get_collection(collection_name=collection_name)
+        collection_info = await self.client.get_collection(
+            collection_name=collection_name
+        )
         vectors_config = getattr(collection_info.config.params, "vectors", None)
         if isinstance(vectors_config, dict):
             vectors_config = next(iter(vectors_config.values()), None)

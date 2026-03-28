@@ -16,12 +16,16 @@ from app.models.common_types import (
 )
 from typing import Literal
 
-SortByLiteral = Literal["created_at", "updated_at", "total_experience_months", "full_name"]
+SortByLiteral = Literal[
+    "created_at", "updated_at", "total_experience_months", "full_name"
+]
 SortOrderLiteral = Literal["asc", "desc"]
 
 
 class CandidateLanguageFilter(BaseModel):
-    language_normalized: str = Field(description="Canonical language name used in candidate filtering.")
+    language_normalized: str = Field(
+        description="Canonical language name used in candidate filtering."
+    )
     min_proficiency_normalized: ProficiencyLiteral | None = Field(
         default=None,
         description="Minimum acceptable language proficiency for this language filter.",
@@ -29,12 +33,17 @@ class CandidateLanguageFilter(BaseModel):
 
 
 class CandidateSearchFilters(BaseModel):
-    job_id: str | None = Field(default=None, description="Prepared job search identifier when the search originates from a job.")
+    job_id: str | None = Field(
+        default=None,
+        description="Prepared job search identifier when the search originates from a job.",
+    )
     source_document_id: str | None = Field(
         default=None,
         description="Source document identifier that produced the prepared search request, if any.",
     )
-    title_raw: str | None = Field(default=None, description="Original job title or search title text.")
+    title_raw: str | None = Field(
+        default=None, description="Original job title or search title text."
+    )
     query_text: str | None = Field(
         default=None,
         description="Main semantic query text used for vector search.",
@@ -151,18 +160,42 @@ class CandidateSearchFilters(BaseModel):
         description="Minimum vector similarity threshold for chunk retrieval. Default is 0.0 to prefer recall-first retrieval.",
     )
 
-    processing_status: str | None = Field(default=None, description="Processing status filter for source documents or profiles.")
-    pipeline_version: str | None = Field(default=None, description="Pipeline version filter.")
+    processing_status: str | None = Field(
+        default=None,
+        description="Processing status filter for source documents or profiles.",
+    )
+    pipeline_version: str | None = Field(
+        default=None, description="Pipeline version filter."
+    )
     model_version: str | None = Field(default=None, description="Model version filter.")
-    extraction_confidence: float | None = Field(default=None, description="Minimum or recorded extraction confidence filter.")
-    error_message: str | None = Field(default=None, description="Processing error message filter when inspecting failed documents.")
-    started_at: datetime | None = Field(default=None, description="Lower-level processing start timestamp filter or metadata carrier.")
-    finished_at: datetime | None = Field(default=None, description="Lower-level processing finish timestamp filter or metadata carrier.")
+    extraction_confidence: float | None = Field(
+        default=None, description="Minimum or recorded extraction confidence filter."
+    )
+    error_message: str | None = Field(
+        default=None,
+        description="Processing error message filter when inspecting failed documents.",
+    )
+    started_at: datetime | None = Field(
+        default=None,
+        description="Lower-level processing start timestamp filter or metadata carrier.",
+    )
+    finished_at: datetime | None = Field(
+        default=None,
+        description="Lower-level processing finish timestamp filter or metadata carrier.",
+    )
 
-    limit: int = Field(default=20, ge=1, le=100, description="Page size for search results.")
-    offset: int = Field(default=0, ge=0, description="Pagination offset for search results.")
-    sort_by: SortByLiteral = Field(default="updated_at", description="Primary structured sort field.")
-    sort_order: SortOrderLiteral = Field(default="desc", description="Sort direction for structured result ordering.")
+    limit: int = Field(
+        default=20, ge=1, le=100, description="Page size for search results."
+    )
+    offset: int = Field(
+        default=0, ge=0, description="Pagination offset for search results."
+    )
+    sort_by: SortByLiteral = Field(
+        default="updated_at", description="Primary structured sort field."
+    )
+    sort_order: SortOrderLiteral = Field(
+        default="desc", description="Sort direction for structured result ordering."
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -185,8 +218,14 @@ class CandidateSearchFilters(BaseModel):
 
 
 class CandidateSearchMatchMetadata(BaseModel):
-    matched_skills: list[str] = Field(default_factory=list, description="Skills from the query that matched the candidate.")
-    matched_languages: list[str] = Field(default_factory=list, description="Languages from the query that matched the candidate.")
+    matched_skills: list[str] = Field(
+        default_factory=list,
+        description="Skills from the query that matched the candidate.",
+    )
+    matched_languages: list[str] = Field(
+        default_factory=list,
+        description="Languages from the query that matched the candidate.",
+    )
     matched_employment_types: list[EmploymentTypeLiteral] = Field(
         default_factory=list,
         description="Employment types that overlap between the query and the candidate profile.",
@@ -210,29 +249,63 @@ class CandidateSearchMatchMetadata(BaseModel):
 
 
 class CandidateSearchScoreBreakdown(BaseModel):
-    overall_score: float | None = Field(default=None, description="Final normalized overall match score in the 0..1 range.")
-    vector_semantic_score: float | None = Field(default=None, description="Semantic vector relevance component.")
-    role_match_score: float | None = Field(default=None, description="Role or profession alignment component.")
-    skills_match_score: float | None = Field(default=None, description="Skills overlap component.")
-    experience_match_score: float | None = Field(default=None, description="Relevant experience alignment component.")
-    language_match_score: float | None = Field(default=None, description="Language compatibility component.")
+    overall_score: float | None = Field(
+        default=None,
+        description="Final normalized overall match score in the 0..1 range.",
+    )
+    vector_semantic_score: float | None = Field(
+        default=None, description="Semantic vector relevance component."
+    )
+    role_match_score: float | None = Field(
+        default=None, description="Role or profession alignment component."
+    )
+    skills_match_score: float | None = Field(
+        default=None, description="Skills overlap component."
+    )
+    experience_match_score: float | None = Field(
+        default=None, description="Relevant experience alignment component."
+    )
+    language_match_score: float | None = Field(
+        default=None, description="Language compatibility component."
+    )
 
 
 class CandidateSearchResultItem(BaseModel):
-    candidate_id: str = Field(description="Candidate identifier for the search result item.")
-    document_id: str = Field(description="Source document identifier for the search result item.")
-    resume_download_url: str | None = Field(default=None, description="Backend URL that allows opening or downloading the candidate resume.")
-    score: float | None = Field(default=None, description="Raw search score returned by the active search strategy.")
-    match_score_percent: int | None = Field(default=None, description="Calibrated explainable match score shown as a percentage.")
+    candidate_id: str = Field(
+        description="Candidate identifier for the search result item."
+    )
+    document_id: str = Field(
+        description="Source document identifier for the search result item."
+    )
+    resume_download_url: str | None = Field(
+        default=None,
+        description="Backend URL that allows opening or downloading the candidate resume.",
+    )
+    score: float | None = Field(
+        default=None,
+        description="Raw search score returned by the active search strategy.",
+    )
+    match_score_percent: int | None = Field(
+        default=None,
+        description="Calibrated explainable match score shown as a percentage.",
+    )
     match_score_breakdown: CandidateSearchScoreBreakdown | None = Field(
         default=None,
         description="Component breakdown used to compute the explainable match score.",
     )
     full_name: str | None = Field(default=None, description="Candidate full name.")
-    current_title_normalized: str | None = Field(default=None, description="Candidate current normalized title.")
-    seniority_normalized: SeniorityLiteral | None = Field(default=None, description="Candidate normalized seniority.")
-    total_experience_months: int | None = Field(default=None, description="Candidate total experience in months.")
-    location_normalized: str | None = Field(default=None, description="Candidate normalized location label.")
+    current_title_normalized: str | None = Field(
+        default=None, description="Candidate current normalized title."
+    )
+    seniority_normalized: SeniorityLiteral | None = Field(
+        default=None, description="Candidate normalized seniority."
+    )
+    total_experience_months: int | None = Field(
+        default=None, description="Candidate total experience in months."
+    )
+    location_normalized: str | None = Field(
+        default=None, description="Candidate normalized location label."
+    )
     remote_policies: list[RemotePolicyLiteral] | None = Field(
         default=None,
         description="Candidate remote work arrangements or preferences.",
@@ -256,8 +329,12 @@ class CandidateSearchResultItem(BaseModel):
 
 
 class CandidateSearchResult(BaseModel):
-    total: int = Field(description="Total number of matching candidates before pagination.")
-    items: list[CandidateSearchResultItem] = Field(description="Paginated candidate search results.")
+    total: int = Field(
+        description="Total number of matching candidates before pagination."
+    )
+    items: list[CandidateSearchResultItem] = Field(
+        description="Paginated candidate search results."
+    )
     applied_filters: CandidateSearchFilters = Field(
         description="Normalized candidate search filters actually applied to this search.",
     )

@@ -17,6 +17,7 @@ async def extract_text(*, filename: str, data: bytes) -> tuple[str, str]:
         return await asyncio.to_thread(_extract_docx, data)
     raise TextExtractionError(f"Unsupported file type: {extension.lstrip('.')}")
 
+
 def _extract_pdf(data: bytes) -> tuple[str, str]:
     try:
         from pypdf import PdfReader

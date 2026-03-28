@@ -71,20 +71,31 @@ class CandidateRuleSearchService:
         )
 
         conditions = self._build_conditions(applied_filters)
-        logger.debug("Candidate rule search: built conditions: {conditions}", conditions=conditions)
+        logger.debug(
+            "Candidate rule search: built conditions: {conditions}",
+            conditions=conditions,
+        )
         sort_column = self._sort_column(applied_filters.sort_by)
         order_clause = (
-            sort_column.asc() if applied_filters.sort_order == "asc" else sort_column.desc()
+            sort_column.asc()
+            if applied_filters.sort_order == "asc"
+            else sort_column.desc()
         )
-        stmt = select(CandidateProfile).where(*conditions).order_by(
-            order_clause,
-            CandidateProfile.candidate_id.asc(),
-            CandidateProfile.document_id.asc(),
+        stmt = (
+            select(CandidateProfile)
+            .where(*conditions)
+            .order_by(
+                order_clause,
+                CandidateProfile.candidate_id.asc(),
+                CandidateProfile.document_id.asc(),
+            )
         )
         result = await self.session.execute(stmt)
         profiles = list(result.scalars().all())
 
-        metadata_by_document = await self._load_match_metadata(profiles, applied_filters)
+        metadata_by_document = await self._load_match_metadata(
+            profiles, applied_filters
+        )
         items = [
             self._build_result_item(
                 profile=profile,
@@ -95,7 +106,9 @@ class CandidateRuleSearchService:
         ]
         items = self._rank_result_items(items)
         total = len(items)
-        items = items[applied_filters.offset : applied_filters.offset + applied_filters.limit]
+        items = items[
+            applied_filters.offset : applied_filters.offset + applied_filters.limit
+        ]
 
         logger.info(
             "Candidate rule search: completed total={total}, returned_items={returned_items}",
@@ -202,7 +215,11 @@ class CandidateRuleSearchService:
             row_conditions.append(CandidateExperience.is_current.is_(False))
 
         conditions = []
-        if title_values or company_values or filters.is_currently_employed_in_title is not None:
+        if (
+            title_values
+            or company_values
+            or filters.is_currently_employed_in_title is not None
+        ):
             conditions.append(exists(select(1).where(*row_conditions)))
 
         if filters.min_relevant_experience_months is not None:
@@ -211,7 +228,9 @@ class CandidateRuleSearchService:
             ]
             if title_values:
                 duration_conditions.append(
-                    func.lower(CandidateExperience.job_title_normalized).in_(title_values)
+                    func.lower(CandidateExperience.job_title_normalized).in_(
+                        title_values
+                    )
                 )
             if company_values:
                 duration_conditions.append(
@@ -222,9 +241,7 @@ class CandidateRuleSearchService:
                 .where(*duration_conditions)
                 .scalar_subquery()
             )
-            conditions.append(
-                relevant_months >= filters.min_relevant_experience_months
-            )
+            conditions.append(relevant_months >= filters.min_relevant_experience_months)
         return conditions
 
     def _build_education_conditions(self, filters: CandidateSearchFilters) -> list:
@@ -237,9 +254,9 @@ class CandidateRuleSearchService:
             exists(
                 select(1).where(
                     CandidateCertification.document_id == CandidateProfile.document_id,
-                    func.lower(CandidateCertification.certification_name_normalized).in_(
-                        filters.certifications
-                    ),
+                    func.lower(
+                        CandidateCertification.certification_name_normalized
+                    ).in_(filters.certifications),
                 )
             )
         ]
@@ -349,7 +366,9 @@ class CandidateRuleSearchService:
         requested_skills = self._requested_skills(filters)
         if not requested_skills:
             return {}
-        stmt = select(CandidateSkill.document_id, CandidateSkill.normalized_skill).where(
+        stmt = select(
+            CandidateSkill.document_id, CandidateSkill.normalized_skill
+        ).where(
             CandidateSkill.document_id.in_(document_ids),
             func.lower(CandidateSkill.normalized_skill).in_(requested_skills),
             *self._skill_source_condition(filters.skill_source_type),
@@ -401,7 +420,9 @@ class CandidateRuleSearchService:
         requested = set(filters.employment_types)
         for document_id, employment_types_json in result.all():
             candidate_values = set(
-                self._normalize_employment_types(_parse_json_array(employment_types_json))
+                self._normalize_employment_types(
+                    _parse_json_array(employment_types_json)
+                )
                 or []
             )
             if not candidate_values:
@@ -453,7 +474,8 @@ class CandidateRuleSearchService:
                 {"degrees": [], "fields_of_study": []},
             )
             metadata[document_id] = self._evaluate_education_match(
-                candidate_degrees=self._normalize_degrees(candidate_item["degrees"]) or [],
+                candidate_degrees=self._normalize_degrees(candidate_item["degrees"])
+                or [],
                 candidate_fields=self._normalize_strings(
                     candidate_item["fields_of_study"]
                 )
@@ -509,7 +531,9 @@ class CandidateRuleSearchService:
             return {
                 "matched_degrees": matched_degrees or candidate_degrees,
                 "matched_fields_of_study": matched_fields,
-                "education_match_status": "partial" if requested_degrees else "mismatch",
+                "education_match_status": (
+                    "partial" if requested_degrees else "mismatch"
+                ),
                 "education_match_note": (
                     "Degree filter matches, but requested field of study is not explicitly present."
                     if requested_degrees
@@ -534,11 +558,15 @@ class CandidateRuleSearchService:
             return None
         return max(values, key=lambda value: education_level_rank(value) or 0)
 
-    def _normalize_filters(self, filters: CandidateSearchFilters) -> CandidateSearchFilters:
+    def _normalize_filters(
+        self, filters: CandidateSearchFilters
+    ) -> CandidateSearchFilters:
         return CandidateSearchFilters(
             query_text=filters.query_text,
             candidate_ids=self._unique(filters.candidate_ids),
-            current_title_normalized=self._normalize_titles(filters.current_title_normalized),
+            current_title_normalized=self._normalize_titles(
+                filters.current_title_normalized
+            ),
             seniority_normalized=self._normalize_strings(filters.seniority_normalized),
             min_total_experience_months=filters.min_total_experience_months,
             max_total_experience_months=filters.max_total_experience_months,
@@ -551,7 +579,9 @@ class CandidateRuleSearchService:
             optional_skills=self._normalize_skills(filters.optional_skills),
             require_all_skills=filters.require_all_skills,
             skill_source_type=filters.skill_source_type,
-            current_or_past_titles=self._normalize_titles(filters.current_or_past_titles),
+            current_or_past_titles=self._normalize_titles(
+                filters.current_or_past_titles
+            ),
             companies=self._normalize_strings(filters.companies),
             domains=self._normalize_strings(filters.domains),
             min_relevant_experience_months=filters.min_relevant_experience_months,

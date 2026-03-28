@@ -7,7 +7,10 @@ from langgraph.graph import END, START, StateGraph
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.entity_extraction import CVEntityExtractionLLMOutput, CandidateEntitiesData
+from app.models.entity_extraction import (
+    CVEntityExtractionLLMOutput,
+    CandidateEntitiesData,
+)
 from app.service.cv.entity_extraction.llm_client import CVEntityExtractionLLMClient
 from app.service.normalization.candidate_entities import normalize_entities
 from app.service.normalization.service import EntityNormalizationService
@@ -59,9 +62,12 @@ class CandidateEntityExtractionGraph:
         self.certifications = CandidateCertificationRepository(session)
         self.llm_client = llm_client or CVEntityExtractionLLMClient()
         self.skill_normalizer = skill_normalizer or HHSkillNormalizerService()
-        self.normalization_service = normalization_service or EntityNormalizationService(
-            session=session,
-            skill_normalizer=self.skill_normalizer,
+        self.normalization_service = (
+            normalization_service
+            or EntityNormalizationService(
+                session=session,
+                skill_normalizer=self.skill_normalizer,
+            )
         )
         self.graph = self._build_graph()
 

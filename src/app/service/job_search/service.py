@@ -123,7 +123,9 @@ class JobSearchPreparationService:
         if profile is None:
             raise JobSearchPreparationError("Prepared job search profile not found")
 
-        languages = await self.languages.list_by_profile_id(profile.job_search_profile_id)
+        languages = await self.languages.list_by_profile_id(
+            profile.job_search_profile_id
+        )
         skills = await self.skills.list_by_profile_id(profile.job_search_profile_id)
         domains = await self.domains.list_by_profile_id(profile.job_search_profile_id)
         run = await self.processing_runs.get_by_job_and_stage(
@@ -132,9 +134,13 @@ class JobSearchPreparationService:
         )
 
         required_skills = [item.normalized_skill for item in skills if item.is_required]
-        optional_skills = [item.normalized_skill for item in skills if not item.is_required]
+        optional_skills = [
+            item.normalized_skill for item in skills if not item.is_required
+        ]
         education_requirements = _parse_json_array(profile.education_requirements)
-        certification_requirements = _parse_json_array(profile.certification_requirements)
+        certification_requirements = _parse_json_array(
+            profile.certification_requirements
+        )
         return CandidateSearchFilters(
             job_id=profile.job_id,
             source_document_id=profile.source_document_id,

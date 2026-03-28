@@ -209,7 +209,9 @@ class CandidateDocumentRepository:
 class CandidateDocumentTextRepository:
     session: AsyncSession
 
-    async def get_by_document_id(self, document_id: str) -> CandidateDocumentText | None:
+    async def get_by_document_id(
+        self, document_id: str
+    ) -> CandidateDocumentText | None:
         result = await self.session.execute(
             select(CandidateDocumentText).where(
                 CandidateDocumentText.document_id == document_id
@@ -248,7 +250,9 @@ class CandidateDocumentTextRepository:
 class CandidateDocumentChunkRepository:
     session: AsyncSession
 
-    async def list_by_document_id(self, document_id: str) -> list[CandidateDocumentChunk]:
+    async def list_by_document_id(
+        self, document_id: str
+    ) -> list[CandidateDocumentChunk]:
         result = await self.session.execute(
             select(CandidateDocumentChunk)
             .where(CandidateDocumentChunk.document_id == document_id)
@@ -311,6 +315,7 @@ class CandidateDocumentChunkRepository:
         await self.session.refresh(chunk)
         return chunk
 
+
 @dataclass(slots=True)
 class CandidateProfileRepository:
     session: AsyncSession
@@ -340,13 +345,17 @@ class CandidateLanguageRepository:
 
     async def list_by_document_id(self, document_id: str) -> list[CandidateLanguage]:
         result = await self.session.execute(
-            select(CandidateLanguage).where(CandidateLanguage.document_id == document_id)
+            select(CandidateLanguage).where(
+                CandidateLanguage.document_id == document_id
+            )
         )
         return list(result.scalars().all())
 
     async def delete_by_document_id(self, document_id: str) -> None:
         await self.session.execute(
-            delete(CandidateLanguage).where(CandidateLanguage.document_id == document_id)
+            delete(CandidateLanguage).where(
+                CandidateLanguage.document_id == document_id
+            )
         )
 
     async def create(self, **values) -> CandidateLanguage:
@@ -659,6 +668,7 @@ class EntityNormalizationRepository:
         await self.session.flush()
         await self.session.refresh(record)
         return record
+
 
 @dataclass(slots=True)
 class JobSearchProfileRepository:

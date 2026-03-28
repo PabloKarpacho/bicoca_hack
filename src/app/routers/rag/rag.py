@@ -169,21 +169,21 @@ def merge_hybrid_results(
     After merging that evidence, we recalculate the recruiter-facing match percentage so
     the final item reflects both semantic similarity and structured overlap.
     """
-    rule_items_by_candidate = {
-        item.candidate_id: item for item in rule_result.items
-    }
+    rule_items_by_candidate = {item.candidate_id: item for item in rule_result.items}
     merged_items = []
     for item in vector_result.items:
         rule_item = rule_items_by_candidate.get(item.candidate_id)
         if rule_item is not None:
             if item.match_metadata is None:
                 item.match_metadata = rule_item.match_metadata
-            match_score_percent, match_score_breakdown = calculate_candidate_match_score(
-                filters=original_filters,
-                current_title_normalized=item.current_title_normalized,
-                total_experience_months=item.total_experience_months,
-                match_metadata=item.match_metadata,
-                vector_semantic_score=item.score,
+            match_score_percent, match_score_breakdown = (
+                calculate_candidate_match_score(
+                    filters=original_filters,
+                    current_title_normalized=item.current_title_normalized,
+                    total_experience_months=item.total_experience_months,
+                    match_metadata=item.match_metadata,
+                    vector_semantic_score=item.score,
+                )
             )
             item.match_score_percent = match_score_percent
             item.match_score_breakdown = match_score_breakdown
@@ -224,17 +224,15 @@ async def enrich_search_results_with_resume_links(
 
     for item in result.items:
         document = documents_by_id.get(item.document_id)
-        if (
-            document is None
-            or not document.storage_bucket
-            or not document.storage_key
-        ):
+        if document is None or not document.storage_bucket or not document.storage_key:
             continue
         item.resume_download_url = build_document_download_path(item.document_id)
     return result
 
 
-def build_stage_status(run, stage: ProcessingStage) -> PipelineStageStatusResponse | None:
+def build_stage_status(
+    run, stage: ProcessingStage
+) -> PipelineStageStatusResponse | None:
     """Convert one processing run row into an API stage status payload."""
     if run is None:
         return None
@@ -516,9 +514,7 @@ async def download_file(
             detail="Stored resume file is not available",
         )
 
-    bucket_name = (
-        document.storage_bucket or request.app.state.cv_storage.bucket_name
-    )
+    bucket_name = document.storage_bucket or request.app.state.cv_storage.bucket_name
     try:
         file_bytes, content_type = await request.app.state.s3.download_bytes(
             key=document.storage_key,
@@ -553,7 +549,7 @@ async def download_file(
     encoded_filename = quote(document.original_filename)
     headers = {
         "Content-Disposition": (
-            f"inline; filename=\"{safe_filename}\"; "
+            f'inline; filename="{safe_filename}"; '
             f"filename*=UTF-8''{encoded_filename}"
         )
     }
@@ -837,7 +833,9 @@ async def search_candidates(
             rule_result=rule_result,
             vector_result=vector_result,
         )
-        merged_result.items = merged_result.items[filters.offset : filters.offset + filters.limit]
+        merged_result.items = merged_result.items[
+            filters.offset : filters.offset + filters.limit
+        ]
         return await enrich_search_results_with_resume_links(
             session=session,
             result=merged_result,

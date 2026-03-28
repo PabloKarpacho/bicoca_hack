@@ -83,7 +83,9 @@ class CandidateVectorIndexingService:
             existing_by_hash = {chunk.chunk_hash: chunk for chunk in existing_chunks}
             next_hashes = {draft.chunk_hash for draft in drafts}
             stale_chunks = [
-                chunk for chunk in existing_chunks if chunk.chunk_hash not in next_hashes
+                chunk
+                for chunk in existing_chunks
+                if chunk.chunk_hash not in next_hashes
             ]
 
             rows_needing_embedding = []

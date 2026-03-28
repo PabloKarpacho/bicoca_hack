@@ -276,7 +276,9 @@ def extract_remote_policies(value: str | list[str] | None) -> list[str] | None:
             matches.append("remote")
         if re.search(r"\bhybrid\b", lowered):
             matches.append("hybrid")
-        if re.search(r"\b(onsite|on-site|on site|office|in office|presenza)\b", lowered):
+        if re.search(
+            r"\b(onsite|on-site|on site|office|in office|presenza)\b", lowered
+        ):
             matches.append("onsite")
 
         normalized_direct = normalize_remote_policy(lowered)

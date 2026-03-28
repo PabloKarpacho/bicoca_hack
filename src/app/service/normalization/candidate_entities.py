@@ -80,7 +80,9 @@ async def normalize_entities(
         )
         for index, item in enumerate(extracted.education)
     ]
-    certifications = [_normalize_certification(item) for item in extracted.certifications]
+    certifications = [
+        _normalize_certification(item) for item in extracted.certifications
+    ]
     total_experience_months = _compute_total_experience_months(experiences)
     profile = await _normalize_profile(
         raw_text=raw_text,
@@ -93,12 +95,16 @@ async def normalize_entities(
     )
     return CandidateEntitiesData(
         profile=profile,
-        languages=[item for item in languages if item.language_normalized or item.language_raw],
+        languages=[
+            item for item in languages if item.language_normalized or item.language_raw
+        ],
         experiences=[
             item for item in experiences if item.company_name_raw or item.job_title_raw
         ],
         skills=[item for item in skills if item.normalized_skill or item.raw_skill],
-        education=[item for item in education if item.institution_raw or item.degree_raw],
+        education=[
+            item for item in education if item.institution_raw or item.degree_raw
+        ],
         certifications=[
             item
             for item in certifications
@@ -136,7 +142,9 @@ async def _normalize_profile(
     normalization_service: EntityNormalizationService | None,
 ) -> CandidateProfileData:
     urls = URL_RE.findall(raw_text)
-    email = extracted_profile.email or candidate_email or _first_match(EMAIL_RE, raw_text)
+    email = (
+        extracted_profile.email or candidate_email or _first_match(EMAIL_RE, raw_text)
+    )
     phone = _clean_text(extracted_profile.phone)
     linkedin_url = extracted_profile.linkedin_url or _first_url(urls, "linkedin.com")
     github_url = extracted_profile.github_url or _first_url(urls, "github.com")
@@ -144,21 +152,26 @@ async def _normalize_profile(
     current_title_raw = extracted_profile.current_title_raw or (
         experiences[0].job_title_raw if experiences else None
     )
-    current_title_normalized = extracted_profile.current_title_normalized or normalize_job_title(
-        current_title_raw
+    current_title_normalized = (
+        extracted_profile.current_title_normalized
+        or normalize_job_title(current_title_raw)
     )
     if normalization_service is not None and current_title_raw:
         title_result = await normalization_service.normalize(
             original_value=current_title_raw,
             normalization_class=NormalizationClass.PROFESSIONS,
         )
-        current_title_normalized = title_result.normalized_value or current_title_normalized
+        current_title_normalized = (
+            title_result.normalized_value or current_title_normalized
+        )
     seniority_normalized = extracted_profile.seniority_normalized or infer_seniority(
         current_title_raw or extracted_profile.headline
     )
     if normalization_service is not None:
         seniority_result = await normalization_service.normalize(
-            original_value=seniority_normalized or current_title_raw or extracted_profile.headline,
+            original_value=seniority_normalized
+            or current_title_raw
+            or extracted_profile.headline,
             normalization_class=NormalizationClass.SENIORITY_LEVELS,
         )
         seniority_normalized = seniority_result.normalized_value or seniority_normalized
@@ -170,7 +183,10 @@ async def _normalize_profile(
                 original_value=value,
                 normalization_class=NormalizationClass.REMOTE_POLICY,
             )
-            if result.normalized_value and result.normalized_value not in normalized_remote_policies:
+            if (
+                result.normalized_value
+                and result.normalized_value not in normalized_remote_policies
+            ):
                 normalized_remote_policies.append(result.normalized_value)
         remote_policies = normalized_remote_policies or remote_policies
     employment_types = extract_employment_types(extracted_profile.employment_types)
@@ -187,7 +203,9 @@ async def _normalize_profile(
             ):
                 normalized_employment_types.append(result.normalized_value)
         employment_types = normalized_employment_types or employment_types
-    full_name = extracted_profile.full_name or candidate_full_name or _first_line(raw_text)
+    full_name = (
+        extracted_profile.full_name or candidate_full_name or _first_line(raw_text)
+    )
     return CandidateProfileData(
         full_name=full_name,
         email=email,
@@ -209,24 +227,32 @@ async def _normalize_profile(
     )
 
 
-async def _normalize_language(item, *, normalization_service: EntityNormalizationService | None) -> CandidateLanguageData:
+async def _normalize_language(
+    item, *, normalization_service: EntityNormalizationService | None
+) -> CandidateLanguageData:
     raw = _clean_text(item.language_raw)
     proficiency_raw = _clean_text(item.proficiency_raw)
     normalized = item.language_normalized or raw
     normalized_language = _title_or_none(normalized)
-    normalized_proficiency = normalize_language_level(item.proficiency_normalized or proficiency_raw)
+    normalized_proficiency = normalize_language_level(
+        item.proficiency_normalized or proficiency_raw
+    )
     if normalization_service is not None and normalized:
         language_result = await normalization_service.normalize(
             original_value=normalized,
             normalization_class=NormalizationClass.LANGUAGES,
         )
         normalized_language = language_result.normalized_value or normalized_language
-    if normalization_service is not None and (item.proficiency_normalized or proficiency_raw):
+    if normalization_service is not None and (
+        item.proficiency_normalized or proficiency_raw
+    ):
         proficiency_result = await normalization_service.normalize(
             original_value=item.proficiency_normalized or proficiency_raw,
             normalization_class=NormalizationClass.PROFICIENCY_LEVELS,
         )
-        normalized_proficiency = proficiency_result.normalized_value or normalized_proficiency
+        normalized_proficiency = (
+            proficiency_result.normalized_value or normalized_proficiency
+        )
     return CandidateLanguageData(
         language_raw=raw,
         language_normalized=normalized_language,
@@ -245,7 +271,9 @@ async def _normalize_experience(
     start_date = parse_partial_date(item.start_date)
     end_date = parse_partial_date(item.end_date)
     is_current = bool(item.is_current) or _looks_current(item.end_date)
-    normalized_title = item.job_title_normalized or normalize_job_title(item.job_title_raw)
+    normalized_title = item.job_title_normalized or normalize_job_title(
+        item.job_title_raw
+    )
     if normalization_service is not None and item.job_title_raw:
         title_result = await normalization_service.normalize(
             original_value=item.job_title_raw,
@@ -294,7 +322,9 @@ async def _normalize_skills(
             normalization_result=normalization_result,
         )
         registry_result = None
-        if normalization_service is not None and (item.raw_skill or item.normalized_skill):
+        if normalization_service is not None and (
+            item.raw_skill or item.normalized_skill
+        ):
             registry_result = await normalization_service.normalize(
                 original_value=item.raw_skill or item.normalized_skill,
                 normalization_class=NormalizationClass.SKILLS,
@@ -309,13 +339,16 @@ async def _normalize_skills(
             CandidateSkillData(
                 raw_skill=_clean_text(item.raw_skill),
                 normalized_skill=normalized,
-                skill_category=item.skill_category or SKILL_CATEGORIES.get(normalized or ""),
+                skill_category=item.skill_category
+                or SKILL_CATEGORIES.get(normalized or ""),
                 source_type=item.source_type or "explicit",
                 confidence=item.confidence,
                 normalization_source=(
                     registry_skill_normalization_source(registry_result)
                     if registry_result is not None
-                    else skill_normalization_source(normalization_result=normalization_result)
+                    else skill_normalization_source(
+                        normalization_result=normalization_result
+                    )
                 ),
                 normalization_external_id=(
                     (registry_result.metadata or {}).get("external_id")
@@ -329,17 +362,25 @@ async def _normalize_skills(
                 normalization_status=(
                     registry_skill_normalization_status(registry_result)
                     if registry_result is not None
-                    else skill_normalization_status(normalization_result=normalization_result)
+                    else skill_normalization_status(
+                        normalization_result=normalization_result
+                    )
                 ),
                 normalization_confidence=(
                     registry_result.confidence
                     if registry_result is not None
-                    else (normalization_result.confidence if normalization_result else None)
+                    else (
+                        normalization_result.confidence
+                        if normalization_result
+                        else None
+                    )
                 ),
                 normalization_metadata=(
                     registry_skill_normalization_metadata(registry_result)
                     if registry_result is not None
-                    else skill_normalization_metadata(normalization_result=normalization_result)
+                    else skill_normalization_metadata(
+                        normalization_result=normalization_result
+                    )
                 ),
             )
         )
@@ -375,7 +416,9 @@ async def _normalize_skills(
                     normalization_source=(
                         registry_skill_normalization_source(registry_result)
                         if registry_result is not None
-                        else skill_normalization_source(normalization_result=normalization_result)
+                        else skill_normalization_source(
+                            normalization_result=normalization_result
+                        )
                     ),
                     normalization_external_id=(
                         (registry_result.metadata or {}).get("external_id")
@@ -389,17 +432,25 @@ async def _normalize_skills(
                     normalization_status=(
                         registry_skill_normalization_status(registry_result)
                         if registry_result is not None
-                        else skill_normalization_status(normalization_result=normalization_result)
+                        else skill_normalization_status(
+                            normalization_result=normalization_result
+                        )
                     ),
                     normalization_confidence=(
                         registry_result.confidence
                         if registry_result is not None
-                        else (normalization_result.confidence if normalization_result else None)
+                        else (
+                            normalization_result.confidence
+                            if normalization_result
+                            else None
+                        )
                     ),
                     normalization_metadata=(
                         registry_skill_normalization_metadata(registry_result)
                         if registry_result is not None
-                        else skill_normalization_metadata(normalization_result=normalization_result)
+                        else skill_normalization_metadata(
+                            normalization_result=normalization_result
+                        )
                     ),
                 )
             )
@@ -437,7 +488,8 @@ def _normalize_certification(item) -> CandidateCertificationData:
     raw_name = _clean_text(item.certification_name_raw)
     return CandidateCertificationData(
         certification_name_raw=raw_name,
-        certification_name_normalized=item.certification_name_normalized or _title_or_none(raw_name),
+        certification_name_normalized=item.certification_name_normalized
+        or _title_or_none(raw_name),
         issuer=_clean_text(item.issuer),
         issue_date=parse_partial_date(item.issue_date),
         expiry_date=parse_partial_date(item.expiry_date),
@@ -445,8 +497,12 @@ def _normalize_certification(item) -> CandidateCertificationData:
     )
 
 
-def _compute_total_experience_months(experiences: list[CandidateExperienceData]) -> int | None:
-    values = [item.duration_months for item in experiences if item.duration_months is not None]
+def _compute_total_experience_months(
+    experiences: list[CandidateExperienceData],
+) -> int | None:
+    values = [
+        item.duration_months for item in experiences if item.duration_months is not None
+    ]
     if not values:
         return None
     return sum(values)
@@ -461,7 +517,9 @@ def _looks_current(value: str | None) -> bool:
 def _split_technologies(value: str | None) -> list[str]:
     if not value:
         return []
-    return [item.strip() for item in re.split(r"[,/|;]", value) if item and item.strip()]
+    return [
+        item.strip() for item in re.split(r"[,/|;]", value) if item and item.strip()
+    ]
 
 
 def _clean_text(value: str | None) -> str | None:

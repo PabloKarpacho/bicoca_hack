@@ -126,16 +126,18 @@ class CandidateVectorSearchService:
         items = []
         for item in sliced:
             profile = profiles.get(item.document_id)
-            match_score_percent, match_score_breakdown = calculate_candidate_match_score(
-                filters=filters,
-                current_title_normalized=(
-                    profile.current_title_normalized if profile else None
-                ),
-                total_experience_months=(
-                    profile.total_experience_months if profile else None
-                ),
-                match_metadata=item.match_metadata,
-                vector_semantic_score=item.score,
+            match_score_percent, match_score_breakdown = (
+                calculate_candidate_match_score(
+                    filters=filters,
+                    current_title_normalized=(
+                        profile.current_title_normalized if profile else None
+                    ),
+                    total_experience_months=(
+                        profile.total_experience_months if profile else None
+                    ),
+                    match_metadata=item.match_metadata,
+                    vector_semantic_score=item.score,
+                )
             )
             items.append(
                 CandidateSearchResultItem(
@@ -148,7 +150,9 @@ class CandidateVectorSearchService:
                     current_title_normalized=(
                         profile.current_title_normalized if profile else None
                     ),
-                    seniority_normalized=profile.seniority_normalized if profile else None,
+                    seniority_normalized=(
+                        profile.seniority_normalized if profile else None
+                    ),
                     total_experience_months=(
                         profile.total_experience_months if profile else None
                     ),
@@ -260,7 +264,9 @@ class CandidateVectorSearchService:
             ]
         )
         parts = self._build_query_parts(filters, intent, profession_values)
-        cleaned_parts = [part for part in (self._clean_text(value) for value in parts) if part]
+        cleaned_parts = [
+            part for part in (self._clean_text(value) for value in parts) if part
+        ]
         if not cleaned_parts:
             return None
         return " ".join(cleaned_parts)
@@ -287,8 +293,14 @@ class CandidateVectorSearchService:
 
     def _resolve_query_intent(self, filters: CandidateSearchFilters) -> QueryIntent:
         has_profession_signal = bool(
-            (filters.current_title_normalized and len(filters.current_title_normalized) > 0)
-            or (filters.current_or_past_titles and len(filters.current_or_past_titles) > 0)
+            (
+                filters.current_title_normalized
+                and len(filters.current_title_normalized) > 0
+            )
+            or (
+                filters.current_or_past_titles
+                and len(filters.current_or_past_titles) > 0
+            )
             or bool(self._clean_text(filters.title_raw))
             or bool(filters.seniority_normalized)
         )
@@ -308,15 +320,32 @@ class CandidateVectorSearchService:
 
         active_modes = sum(
             1
-            for flag in [has_profession_signal, has_experience_signal, has_skills_signal]
+            for flag in [
+                has_profession_signal,
+                has_experience_signal,
+                has_skills_signal,
+            ]
             if flag
         )
 
-        if has_experience_signal and not has_profession_signal and not has_skills_signal:
+        if (
+            has_experience_signal
+            and not has_profession_signal
+            and not has_skills_signal
+        ):
             return "experience_centric"
-        if has_skills_signal and not has_profession_signal and not has_experience_signal:
+        if (
+            has_skills_signal
+            and not has_profession_signal
+            and not has_experience_signal
+        ):
             return "skills_centric"
-        if has_profession_signal and not has_experience_signal and not has_skills_signal and not has_general_query:
+        if (
+            has_profession_signal
+            and not has_experience_signal
+            and not has_skills_signal
+            and not has_general_query
+        ):
             return "profession_centric"
         if has_general_query and active_modes <= 1 and has_profession_signal:
             return "profession_centric"
@@ -365,20 +394,42 @@ class CandidateVectorSearchService:
 
         if intent == "profession_centric":
             return [
-                _build_sentence("Requested role", ", ".join(profession_values) if profession_values else title_raw),
-                _build_sentence("Target seniority", ", ".join(seniority_values) if seniority_values else None),
-                _build_sentence("Relevant domains", ", ".join(domains) if domains else None),
-                _build_sentence("Core skills", ", ".join(required_skills[:8]) if required_skills else None),
-                _build_sentence("Language requirements", ", ".join(language_fragments) if language_fragments else None),
+                _build_sentence(
+                    "Requested role",
+                    ", ".join(profession_values) if profession_values else title_raw,
+                ),
+                _build_sentence(
+                    "Target seniority",
+                    ", ".join(seniority_values) if seniority_values else None,
+                ),
+                _build_sentence(
+                    "Relevant domains", ", ".join(domains) if domains else None
+                ),
+                _build_sentence(
+                    "Core skills",
+                    ", ".join(required_skills[:8]) if required_skills else None,
+                ),
+                _build_sentence(
+                    "Language requirements",
+                    ", ".join(language_fragments) if language_fragments else None,
+                ),
                 base_query,
             ]
         if intent == "experience_centric":
             return [
                 self._clean_text(filters.query_text_responsibilities),
                 _build_sentence("Responsibilities focus", base_query),
-                _build_sentence("Relevant past roles", ", ".join(profession_values) if profession_values else None),
-                _build_sentence("Relevant companies", ", ".join(filters.companies) if filters.companies else None),
-                _build_sentence("Relevant domains", ", ".join(domains) if domains else None),
+                _build_sentence(
+                    "Relevant past roles",
+                    ", ".join(profession_values) if profession_values else None,
+                ),
+                _build_sentence(
+                    "Relevant companies",
+                    ", ".join(filters.companies) if filters.companies else None,
+                ),
+                _build_sentence(
+                    "Relevant domains", ", ".join(domains) if domains else None
+                ),
                 _build_sentence(
                     "Relevant experience",
                     (
@@ -391,37 +442,77 @@ class CandidateVectorSearchService:
         if intent == "skills_centric":
             return [
                 self._clean_text(filters.query_text_skills),
-                _build_sentence("Required skills", ", ".join(required_skills) if required_skills else None),
-                _build_sentence("Supporting skills", ", ".join(optional_skills) if optional_skills else None),
-                _build_sentence("Relevant roles", ", ".join(profession_values) if profession_values else None),
-                _build_sentence("Relevant domains", ", ".join(domains) if domains else None),
+                _build_sentence(
+                    "Required skills",
+                    ", ".join(required_skills) if required_skills else None,
+                ),
+                _build_sentence(
+                    "Supporting skills",
+                    ", ".join(optional_skills) if optional_skills else None,
+                ),
+                _build_sentence(
+                    "Relevant roles",
+                    ", ".join(profession_values) if profession_values else None,
+                ),
+                _build_sentence(
+                    "Relevant domains", ", ".join(domains) if domains else None
+                ),
                 base_query,
             ]
         return [
             base_query,
             self._clean_text(filters.query_text_responsibilities),
             self._clean_text(filters.query_text_skills),
-            _build_sentence("Requested role", ", ".join(profession_values) if profession_values else title_raw),
-            _build_sentence("Target seniority", ", ".join(seniority_values) if seniority_values else None),
-            _build_sentence("Required skills", ", ".join(required_skills) if required_skills else None),
-            _build_sentence("Supporting skills", ", ".join(optional_skills) if optional_skills else None),
-            _build_sentence("Relevant domains", ", ".join(domains) if domains else None),
-            _build_sentence("Language requirements", ", ".join(language_fragments) if language_fragments else None),
+            _build_sentence(
+                "Requested role",
+                ", ".join(profession_values) if profession_values else title_raw,
+            ),
+            _build_sentence(
+                "Target seniority",
+                ", ".join(seniority_values) if seniority_values else None,
+            ),
+            _build_sentence(
+                "Required skills",
+                ", ".join(required_skills) if required_skills else None,
+            ),
+            _build_sentence(
+                "Supporting skills",
+                ", ".join(optional_skills) if optional_skills else None,
+            ),
+            _build_sentence(
+                "Relevant domains", ", ".join(domains) if domains else None
+            ),
+            _build_sentence(
+                "Language requirements",
+                ", ".join(language_fragments) if language_fragments else None,
+            ),
             _build_sentence(
                 "Locations",
-                ", ".join(self._humanize_token(value) for value in filters.location_normalized)
-                if filters.location_normalized
-                else None,
+                (
+                    ", ".join(
+                        self._humanize_token(value)
+                        for value in filters.location_normalized
+                    )
+                    if filters.location_normalized
+                    else None
+                ),
             ),
             _build_sentence(
                 "Employment type",
-                ", ".join(self._humanize_token(value) for value in filters.employment_types)
-                if filters.employment_types
-                else None,
+                (
+                    ", ".join(
+                        self._humanize_token(value)
+                        for value in filters.employment_types
+                    )
+                    if filters.employment_types
+                    else None
+                ),
             ),
         ]
 
-    def _aggregate_hits(self, raw_hits: list[dict]) -> dict[str, CandidateSearchResultItem]:
+    def _aggregate_hits(
+        self, raw_hits: list[dict]
+    ) -> dict[str, CandidateSearchResultItem]:
         """Aggregate chunk-level Qdrant hits into candidate-level semantic evidence.
 
         We intentionally aggregate over the best few chunks instead of using just the
@@ -500,7 +591,9 @@ class CandidateVectorSearchService:
                 document_id=best_hit.get("payload", {}).get("document_id"),
                 score=final_score,
                 matched_chunk_type=best_hit.get("payload", {}).get("chunk_type"),
-                matched_chunk_text_preview=str(best_hit.get("payload", {}).get("text", ""))[:240],
+                matched_chunk_text_preview=str(
+                    best_hit.get("payload", {}).get("text", "")
+                )[:240],
                 top_chunks=top_chunks,
             )
         return aggregated
@@ -513,7 +606,9 @@ class CandidateVectorSearchService:
         if not document_ids:
             return {}
         result = await self.session.execute(
-            select(CandidateProfile).where(CandidateProfile.document_id.in_(document_ids))
+            select(CandidateProfile).where(
+                CandidateProfile.document_id.in_(document_ids)
+            )
         )
         profiles = list(result.scalars().all())
         return {profile.document_id: profile for profile in profiles}

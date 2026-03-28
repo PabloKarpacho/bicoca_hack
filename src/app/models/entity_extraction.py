@@ -537,7 +537,10 @@ class JobSearchExtractionLLMOutput(BaseModel):
                 if isinstance(item, str)
             ]
 
-        if "certifications" not in data and data.get("certification_requirements") is not None:
+        if (
+            "certifications" not in data
+            and data.get("certification_requirements") is not None
+        ):
             data["certifications"] = [
                 {"certification_name_raw": item}
                 for item in data.get("certification_requirements") or []
@@ -549,18 +552,34 @@ class JobSearchExtractionLLMOutput(BaseModel):
 
 
 class CandidateProfileData(BaseModel):
-    full_name: str | None = Field(default=None, description="Persisted candidate full name.")
-    email: str | None = Field(default=None, description="Persisted candidate email address.")
-    phone: str | None = Field(default=None, description="Persisted candidate phone number.")
-    location_raw: str | None = Field(default=None, description="Persisted raw candidate location.")
-    linkedin_url: str | None = Field(default=None, description="Persisted LinkedIn profile URL.")
-    github_url: str | None = Field(default=None, description="Persisted GitHub profile URL.")
+    full_name: str | None = Field(
+        default=None, description="Persisted candidate full name."
+    )
+    email: str | None = Field(
+        default=None, description="Persisted candidate email address."
+    )
+    phone: str | None = Field(
+        default=None, description="Persisted candidate phone number."
+    )
+    location_raw: str | None = Field(
+        default=None, description="Persisted raw candidate location."
+    )
+    linkedin_url: str | None = Field(
+        default=None, description="Persisted LinkedIn profile URL."
+    )
+    github_url: str | None = Field(
+        default=None, description="Persisted GitHub profile URL."
+    )
     portfolio_url: str | None = Field(
         default=None,
         description="Persisted portfolio or personal website URL.",
     )
-    headline: str | None = Field(default=None, description="Persisted short profile headline.")
-    summary: str | None = Field(default=None, description="Persisted candidate summary text.")
+    headline: str | None = Field(
+        default=None, description="Persisted short profile headline."
+    )
+    summary: str | None = Field(
+        default=None, description="Persisted candidate summary text."
+    )
     current_title_raw: str | None = Field(
         default=None,
         description="Most recent or current job title as extracted from the CV.",
@@ -592,7 +611,9 @@ class CandidateProfileData(BaseModel):
 
 
 class CandidateLanguageData(BaseModel):
-    language_raw: str | None = Field(default=None, description="Language label as originally extracted.")
+    language_raw: str | None = Field(
+        default=None, description="Language label as originally extracted."
+    )
     language_normalized: str | None = Field(
         default=None,
         description="Normalized human-readable language name.",
@@ -612,18 +633,32 @@ class CandidateLanguageData(BaseModel):
 
 
 class CandidateExperienceData(BaseModel):
-    position_order: int = Field(description="Stable ordering of the experience item within the document.")
-    company_name_raw: str | None = Field(default=None, description="Persisted raw company or organization name.")
-    job_title_raw: str | None = Field(default=None, description="Persisted raw job title.")
+    position_order: int = Field(
+        description="Stable ordering of the experience item within the document."
+    )
+    company_name_raw: str | None = Field(
+        default=None, description="Persisted raw company or organization name."
+    )
+    job_title_raw: str | None = Field(
+        default=None, description="Persisted raw job title."
+    )
     job_title_normalized: str | None = Field(
         default=None,
         description="Normalized canonical label for the role title.",
     )
-    start_date: date | None = Field(default=None, description="Persisted role start date.")
-    end_date: date | None = Field(default=None, description="Persisted role end date, if any.")
+    start_date: date | None = Field(
+        default=None, description="Persisted role start date."
+    )
+    end_date: date | None = Field(
+        default=None, description="Persisted role end date, if any."
+    )
     is_current: bool = Field(default=False, description="Whether the role is current.")
-    duration_months: int | None = Field(default=None, description="Persisted duration of the role in months.")
-    location_raw: str | None = Field(default=None, description="Persisted raw location for the role.")
+    duration_months: int | None = Field(
+        default=None, description="Persisted duration of the role in months."
+    )
+    location_raw: str | None = Field(
+        default=None, description="Persisted raw location for the role."
+    )
     responsibilities_text: str | None = Field(
         default=None,
         description="Persisted concise summary of responsibilities for the role.",
@@ -643,7 +678,9 @@ class CandidateExperienceData(BaseModel):
 
 
 class CandidateSkillData(BaseModel):
-    raw_skill: str | None = Field(default=None, description="Skill as originally extracted from the source.")
+    raw_skill: str | None = Field(
+        default=None, description="Skill as originally extracted from the source."
+    )
     normalized_skill: str | None = Field(
         default=None,
         description="Normalized canonical skill label stored for downstream search.",
@@ -683,16 +720,28 @@ class CandidateSkillData(BaseModel):
 
 
 class CandidateEducationData(BaseModel):
-    position_order: int = Field(description="Stable ordering of the education item within the document.")
-    institution_raw: str | None = Field(default=None, description="Persisted raw institution name.")
-    degree_raw: str | None = Field(default=None, description="Persisted raw degree label.")
+    position_order: int = Field(
+        description="Stable ordering of the education item within the document."
+    )
+    institution_raw: str | None = Field(
+        default=None, description="Persisted raw institution name."
+    )
+    degree_raw: str | None = Field(
+        default=None, description="Persisted raw degree label."
+    )
     degree_normalized: EducationLiteral | None = Field(
         default=None,
         description="Normalized canonical degree level.",
     )
-    field_of_study: str | None = Field(default=None, description="Persisted field or major.")
-    start_date: date | None = Field(default=None, description="Persisted education start date.")
-    end_date: date | None = Field(default=None, description="Persisted education end or graduation date.")
+    field_of_study: str | None = Field(
+        default=None, description="Persisted field or major."
+    )
+    start_date: date | None = Field(
+        default=None, description="Persisted education start date."
+    )
+    end_date: date | None = Field(
+        default=None, description="Persisted education end or graduation date."
+    )
     confidence: float | None = Field(
         default=None,
         description="Extraction confidence for this persisted education item.",
@@ -708,9 +757,15 @@ class CandidateCertificationData(BaseModel):
         default=None,
         description="Normalized certification label when available.",
     )
-    issuer: str | None = Field(default=None, description="Persisted certification issuer.")
-    issue_date: date | None = Field(default=None, description="Persisted certification issue date.")
-    expiry_date: date | None = Field(default=None, description="Persisted certification expiry date.")
+    issuer: str | None = Field(
+        default=None, description="Persisted certification issuer."
+    )
+    issue_date: date | None = Field(
+        default=None, description="Persisted certification issue date."
+    )
+    expiry_date: date | None = Field(
+        default=None, description="Persisted certification expiry date."
+    )
     confidence: float | None = Field(
         default=None,
         description="Extraction confidence for this persisted certification item.",
@@ -718,11 +773,19 @@ class CandidateCertificationData(BaseModel):
 
 
 class CandidateEntitiesData(BaseModel):
-    profile: CandidateProfileData = Field(description="Persisted candidate profile payload.")
-    languages: list[CandidateLanguageData] = Field(description="Persisted candidate languages.")
-    experiences: list[CandidateExperienceData] = Field(description="Persisted candidate experience items.")
+    profile: CandidateProfileData = Field(
+        description="Persisted candidate profile payload."
+    )
+    languages: list[CandidateLanguageData] = Field(
+        description="Persisted candidate languages."
+    )
+    experiences: list[CandidateExperienceData] = Field(
+        description="Persisted candidate experience items."
+    )
     skills: list[CandidateSkillData] = Field(description="Persisted candidate skills.")
-    education: list[CandidateEducationData] = Field(description="Persisted candidate education items.")
+    education: list[CandidateEducationData] = Field(
+        description="Persisted candidate education items."
+    )
     certifications: list[CandidateCertificationData] = Field(
         description="Persisted candidate certifications."
     )
@@ -732,29 +795,53 @@ class ProcessingRunResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     processing_run_id: str = Field(description="Unique processing run identifier.")
-    document_id: str = Field(description="Document identifier associated with the processing run.")
-    candidate_id: str | None = Field(default=None, description="Candidate identifier when available.")
-    processing_stage: str = Field(description="Pipeline stage executed by the processing run.")
+    document_id: str = Field(
+        description="Document identifier associated with the processing run."
+    )
+    candidate_id: str | None = Field(
+        default=None, description="Candidate identifier when available."
+    )
+    processing_stage: str = Field(
+        description="Pipeline stage executed by the processing run."
+    )
     status: str = Field(description="Current status of the processing run.")
-    pipeline_version: str = Field(description="Pipeline version used for the processing run.")
-    model_version: str | None = Field(default=None, description="LLM or model version used, when available.")
+    pipeline_version: str = Field(
+        description="Pipeline version used for the processing run."
+    )
+    model_version: str | None = Field(
+        default=None, description="LLM or model version used, when available."
+    )
     extraction_confidence: float | None = Field(
         default=None,
         description="Overall extraction confidence recorded for the run.",
     )
-    error_message: str | None = Field(default=None, description="Error message if the run failed.")
-    started_at: datetime | None = Field(default=None, description="Timestamp when processing started.")
-    completed_at: datetime | None = Field(default=None, description="Timestamp when processing completed.")
-    created_at: datetime = Field(description="Creation timestamp for the processing run record.")
-    updated_at: datetime = Field(description="Last update timestamp for the processing run record.")
+    error_message: str | None = Field(
+        default=None, description="Error message if the run failed."
+    )
+    started_at: datetime | None = Field(
+        default=None, description="Timestamp when processing started."
+    )
+    completed_at: datetime | None = Field(
+        default=None, description="Timestamp when processing completed."
+    )
+    created_at: datetime = Field(
+        description="Creation timestamp for the processing run record."
+    )
+    updated_at: datetime = Field(
+        description="Last update timestamp for the processing run record."
+    )
 
 
 class EntityExtractionRunResponse(BaseModel):
     document_id: str = Field(description="Document identifier for the extraction run.")
-    candidate_id: str | None = Field(default=None, description="Candidate identifier when available.")
+    candidate_id: str | None = Field(
+        default=None, description="Candidate identifier when available."
+    )
     status: str = Field(description="Current extraction status.")
     pipeline_version: str = Field(description="Pipeline version used for extraction.")
-    model_version: str | None = Field(default=None, description="Model version used for extraction.")
+    model_version: str | None = Field(
+        default=None, description="Model version used for extraction."
+    )
     extraction_confidence: float | None = Field(
         default=None,
         description="Overall extraction confidence returned for the run.",
@@ -762,8 +849,12 @@ class EntityExtractionRunResponse(BaseModel):
 
 
 class CandidateEntitiesResponse(BaseModel):
-    document_id: str = Field(description="Document identifier for the extracted candidate entities.")
-    candidate_id: str | None = Field(default=None, description="Candidate identifier when available.")
+    document_id: str = Field(
+        description="Document identifier for the extracted candidate entities."
+    )
+    candidate_id: str | None = Field(
+        default=None, description="Candidate identifier when available."
+    )
     processing_run: ProcessingRunResponse | None = Field(
         default=None,
         description="Latest processing run metadata associated with the document.",
@@ -772,10 +863,16 @@ class CandidateEntitiesResponse(BaseModel):
         default=None,
         description="Persisted candidate profile data for the document.",
     )
-    languages: list[CandidateLanguageData] = Field(description="Persisted candidate languages.")
-    experiences: list[CandidateExperienceData] = Field(description="Persisted candidate experience items.")
+    languages: list[CandidateLanguageData] = Field(
+        description="Persisted candidate languages."
+    )
+    experiences: list[CandidateExperienceData] = Field(
+        description="Persisted candidate experience items."
+    )
     skills: list[CandidateSkillData] = Field(description="Persisted candidate skills.")
-    education: list[CandidateEducationData] = Field(description="Persisted candidate education items.")
+    education: list[CandidateEducationData] = Field(
+        description="Persisted candidate education items."
+    )
     certifications: list[CandidateCertificationData] = Field(
         description="Persisted candidate certifications."
     )

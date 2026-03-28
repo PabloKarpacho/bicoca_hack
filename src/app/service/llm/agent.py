@@ -65,7 +65,9 @@ class Agent:
                 tool_args = json.loads(tool_call["function"]["arguments"])
                 tool_fn = self.tool_map.get(tool_name)
                 if tool_fn is None:
-                    logger.error("LLM agent tool not found: {tool_name}", tool_name=tool_name)
+                    logger.error(
+                        "LLM agent tool not found: {tool_name}", tool_name=tool_name
+                    )
                     return conversation
 
                 logger.debug(
@@ -108,5 +110,5 @@ class Agent:
         )
 
         logger.debug("LLM agent structured response: {response}", response=response)
-        
+
         return response

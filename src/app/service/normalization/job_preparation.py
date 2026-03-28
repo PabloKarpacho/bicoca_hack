@@ -33,8 +33,12 @@ async def normalize_job_search_requirements(
 ) -> PreparedJobSearchData:
     profile = extracted.profile
 
-    normalized_title = normalize_job_title(profile.title_normalized or profile.title_raw)
-    if normalization_service is not None and (profile.title_normalized or profile.title_raw):
+    normalized_title = normalize_job_title(
+        profile.title_normalized or profile.title_raw
+    )
+    if normalization_service is not None and (
+        profile.title_normalized or profile.title_raw
+    ):
         title_result = await normalization_service.normalize(
             original_value=profile.title_normalized or profile.title_raw,
             normalization_class=NormalizationClass.PROFESSIONS,
@@ -46,7 +50,9 @@ async def normalize_job_search_requirements(
     )
     if normalization_service is not None:
         seniority_result = await normalization_service.normalize(
-            original_value=seniority_normalized or profile.seniority_normalized or profile.title_raw,
+            original_value=seniority_normalized
+            or profile.seniority_normalized
+            or profile.title_raw,
             normalization_class=NormalizationClass.SENIORITY_LEVELS,
         )
         seniority_normalized = seniority_result.normalized_value or seniority_normalized
@@ -115,7 +121,9 @@ async def normalize_job_search_requirements(
     )
 
 
-def _normalize_seniority(extracted_seniority: str | None, title_raw: str | None) -> str | None:
+def _normalize_seniority(
+    extracted_seniority: str | None, title_raw: str | None
+) -> str | None:
     value = _clean_text(extracted_seniority)
     if value:
         normalized = infer_seniority(value)
@@ -125,7 +133,9 @@ def _normalize_seniority(extracted_seniority: str | None, title_raw: str | None)
     return inferred
 
 
-async def _normalize_languages(items, *, normalization_service: EntityNormalizationService | None) -> list[PreparedJobLanguageRequirement]:
+async def _normalize_languages(
+    items, *, normalization_service: EntityNormalizationService | None
+) -> list[PreparedJobLanguageRequirement]:
     normalized_items: list[PreparedJobLanguageRequirement] = []
     seen: set[tuple[str, str | None, bool]] = set()
     for item in items:
@@ -206,7 +216,9 @@ async def _normalize_skills(
     required_set = set(filtered_required)
     return {
         "required_skills": filtered_required,
-        "optional_skills": [item for item in filtered_optional if item not in required_set],
+        "optional_skills": [
+            item for item in filtered_optional if item not in required_set
+        ],
         "semantic_skill_signals": semantic_skill_signals,
     }
 
@@ -274,9 +286,8 @@ def _is_semantic_only_managerial_skill(value: str) -> bool:
     }
     if normalized in semantic_only_values:
         return True
-    return (
-        "sprint" in normalized
-        and ("week" in normalized or "ceremon" in normalized or "retro" in normalized)
+    return "sprint" in normalized and (
+        "week" in normalized or "ceremon" in normalized or "retro" in normalized
     )
 
 
@@ -356,14 +367,23 @@ def _build_vector_queries(
         main_parts.append(f"Role: {rule_filters.title_normalized.replace('_', ' ')}.")
     elif rule_filters.title_raw:
         main_parts.append(f"Role: {rule_filters.title_raw}.")
-    if rule_filters.seniority_normalized and rule_filters.seniority_normalized != "unknown":
+    if (
+        rule_filters.seniority_normalized
+        and rule_filters.seniority_normalized != "unknown"
+    ):
         main_parts.append(f"Seniority: {rule_filters.seniority_normalized}.")
     if rule_filters.min_experience_months:
-        main_parts.append(f"Minimum experience: {rule_filters.min_experience_months} months.")
+        main_parts.append(
+            f"Minimum experience: {rule_filters.min_experience_months} months."
+        )
     if rule_filters.required_skills:
-        main_parts.append("Must-have skills: " + ", ".join(rule_filters.required_skills) + ".")
+        main_parts.append(
+            "Must-have skills: " + ", ".join(rule_filters.required_skills) + "."
+        )
     if rule_filters.optional_skills:
-        main_parts.append("Nice-to-have skills: " + ", ".join(rule_filters.optional_skills) + ".")
+        main_parts.append(
+            "Nice-to-have skills: " + ", ".join(rule_filters.optional_skills) + "."
+        )
     if rule_filters.required_languages:
         language_fragments = []
         for item in rule_filters.required_languages:
@@ -388,11 +408,17 @@ def _build_vector_queries(
     skills_query_text = None
     skill_parts: list[str] = []
     if rule_filters.required_skills:
-        skill_parts.append("Required skills: " + ", ".join(rule_filters.required_skills) + ".")
+        skill_parts.append(
+            "Required skills: " + ", ".join(rule_filters.required_skills) + "."
+        )
     if rule_filters.optional_skills:
-        skill_parts.append("Optional skills: " + ", ".join(rule_filters.optional_skills) + ".")
+        skill_parts.append(
+            "Optional skills: " + ", ".join(rule_filters.optional_skills) + "."
+        )
     if semantic_skill_signals:
-        skill_parts.append("Delivery signals: " + ", ".join(semantic_skill_signals) + ".")
+        skill_parts.append(
+            "Delivery signals: " + ", ".join(semantic_skill_signals) + "."
+        )
     if skill_parts:
         skills_query_text = " ".join(skill_parts)
 
@@ -490,12 +516,20 @@ async def _normalize_location(
         original_value=parts[-1],
         normalization_class=NormalizationClass.COUNTRIES,
     )
-    values = [value for value in [city_result.normalized_value, country_result.normalized_value] if value]
-    resolved = ", ".join(values) if values else re.sub(r"\s+", " ", cleaned.strip().lower())
+    values = [
+        value
+        for value in [city_result.normalized_value, country_result.normalized_value]
+        if value
+    ]
+    resolved = (
+        ", ".join(values) if values else re.sub(r"\s+", " ", cleaned.strip().lower())
+    )
     return re.sub(r"\s+", " ", resolved.strip().lower())
 
 
-def _normalize_min_experience_months(months: int | None, years: int | None) -> int | None:
+def _normalize_min_experience_months(
+    months: int | None, years: int | None
+) -> int | None:
     if months is not None and months >= 0:
         return months
     if years is not None and years >= 0:
