@@ -1,4 +1,4 @@
-name: Deploy noti_bot
+name: Deploy bicoca_hack
 
 on:
   push:
